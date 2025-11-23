@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useCoAgent, useCopilotAction, useCopilotChat, CatchAllActionRenderProps } from "@copilotkit/react-core";
+import { useEffect, useState, useRef, createContext, useContext } from "react";
+import { useCoAgent, useCopilotAction, useCopilotChat, CatchAllActionRenderProps, useCopilotChatInternal } from "@copilotkit/react-core";
 import { CopilotSidebar, HeaderProps, useChatContext } from "@copilotkit/react-ui";
 import { toast } from "sonner";
 import { AgentState } from "@/lib/types";
@@ -73,16 +73,18 @@ LAYOUT_WITH_LEGEND()
 }`,
 };
 
+// 创建 Context 用于清空功能
+const ClearChatContext = createContext<() => void>(() => {});
+
 // 自定义 Header 组件，包含清空对话按钮
 function CustomHeader({}: HeaderProps) {
   const { setOpen, icons, labels } = useChatContext();
-  const { reset } = useCopilotChat();
+  const handleClearChat = useContext(ClearChatContext);
 
-  const handleClearChat = () => {
-    // 使用 reset() 方法清空对话，CopilotKit 会自动重新显示初始欢迎语
-    reset();
+  const onClearClick = () => {
+    handleClearChat();
 
-    toast("对话已重置", {
+    toast("对话已清空", {
       duration: 2000,
       style: {
         background: "#f0fdf4",
@@ -99,7 +101,7 @@ function CustomHeader({}: HeaderProps) {
       <div className="text-lg font-semibold">{labels.title}</div>
       <div className="flex items-center gap-2">
         <button
-          onClick={handleClearChat}
+          onClick={onClearClick}
           className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
           title="清空对话"
         >
@@ -284,6 +286,16 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedCode]);
 
+  // 使用内部 API 访问 setMessages
+  const { setMessages } = useCopilotChatInternal();
+
+  // 清空对话消息（不影响 Agent 状态和图表代码）
+  const handleClearChat = () => {
+    // 使用 setMessages([]) 只清空消息历史
+    // 不会触发 Agent 状态重置，保留图表代码
+    setMessages([]);
+  };
+
   const handleExport = async (format: 'svg' | 'png' | 'png-opaque' | 'jpeg' | 'pdf') => {
     const diagramType = state.diagram_type || "mermaid";
     const timestamp = Date.now();
@@ -321,8 +333,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-white" style={{ "--copilot-kit-primary-color": themeColor } as React.CSSProperties}>
-      {/* 左侧: 代码编辑器 (25%) */}
+    <ClearChatContext.Provider value={handleClearChat}>
+      <div className="flex h-screen bg-white" style={{ "--copilot-kit-primary-color": themeColor } as React.CSSProperties}>
+        {/* 左侧: 代码编辑器 (25%) */}
       <div className="w-1/4 border-r border-gray-200">
         <CodeEditor
           code={localCode}
@@ -406,16 +419,16 @@ export default function Home() {
         />
       </div>
 
-      {/* 右侧: Copilot 侧边栏 */}
-      <CopilotSidebar
-        defaultOpen={true}
-        clickOutsideToClose={false}
-        Header={CustomHeader}
-        labels={{
-          title: "Kroki Agent",
-          initial: "我可以帮你生成各种图表！点击下面的案例快速开始，或直接描述你想要的图表。",
-        }}
-        suggestions={[
+        {/* 右侧: Copilot 侧边栏 */}
+        <CopilotSidebar
+          defaultOpen={true}
+          clickOutsideToClose={false}
+          Header={CustomHeader}
+          labels={{
+            title: "Kroki Agent",
+            initial: "我可以帮你生成各种图表！点击下面的案例快速开始，或直接描述你想要的图表。",
+          }}
+          suggestions={[
           {
             title: "登录流程图",
             message: "用 Mermaid 生成一个用户登录的流程图",
@@ -432,8 +445,9 @@ export default function Home() {
             title: "C4 架构",
             message: "用 C4 PlantUML 画一个电商系统的上下文图",
           },
-        ]}
-      />
-    </div>
+          ]}
+        />
+      </div>
+    </ClearChatContext.Provider>
   );
 }

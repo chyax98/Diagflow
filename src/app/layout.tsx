@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 
 import { CopilotKit } from "@copilotkit/react-core";
 import { Toaster } from "sonner";
-import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DiagFlow - AI 驱动的智能图表生成器",

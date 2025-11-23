@@ -38,12 +38,18 @@ html {
   height: 100%;
 }
 
-/* 隐藏 CopilotKit 的点赞/点踩按钮 */
-[class*="ResponseButton"],
-[class*="FeedbackButton"],
-button[aria-label*="thumbs"],
-button[aria-label*="feedback"],
-.copilotKitMessage button[title*="👍"],
-.copilotKitMessage button[title*="👎"] {
+/* 隐藏 CopilotKit 的点赞/点踩按钮（保留复制和重试） */
+/* 使用实际 DOM 中的确切选择器，从用户提供的 HTML 结构确认 */
+button.copilotKitMessageControlButton[aria-label="Thumbs up"],
+button.copilotKitMessageControlButton[title="Thumbs up"],
+button.copilotKitMessageControlButton[aria-label="Thumbs down"],
+button.copilotKitMessageControlButton[title="Thumbs down"] {
   display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }

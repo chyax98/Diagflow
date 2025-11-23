@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import syntax knowledge base
-from src.syntax import DIAGRAM_SYNTAX
+from syntax import DIAGRAM_SYNTAX
 
 # Import unified Kroki client
-from src.kroki_client import render_diagram
+from kroki_client import render_diagram
 
 # =====
 # State

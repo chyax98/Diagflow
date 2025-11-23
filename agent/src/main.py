@@ -4,9 +4,9 @@ import logfire
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 from starlette.requests import Request
-from src.agent import agent, StateDeps, DiagramState
+from agent import agent, StateDeps, DiagramState
 from pydantic_ai.ag_ui import AGUIApp
-from src.kroki_client import render_diagram
+from kroki_client import render_diagram
 
 # 配置 Logfire：启用本地日志，只记录关键信息
 logfire.configure(
@@ -83,4 +83,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     # 开发环境启用热重载，生产环境禁用
     reload = os.getenv("ENV", "development") == "development"
-    uvicorn.run("src.main:app", host="0.0.0.0", port=port, reload=reload)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)
