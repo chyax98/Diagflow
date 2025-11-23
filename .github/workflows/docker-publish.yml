@@ -1,10 +1,17 @@
 name: Docker 镜像发布
 
 on:
-  # 推送到 main 分支自动发布
+  # 推送到 main 分支自动发布（仅代码变更）
   push:
     branches:
       - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - '.env.example'
+      - 'agent/.env.example'
   # Release 发布时也触发
   release:
     types: [published]
