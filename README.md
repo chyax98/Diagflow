@@ -10,6 +10,18 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/chyax98/Diagflow/actions/workflows/ci.yml">
+    <img src="https://github.com/chyax98/Diagflow/actions/workflows/ci.yml/badge.svg" alt="CI Status"/>
+  </a>
+  <a href="https://github.com/chyax98/Diagflow/releases">
+    <img src="https://img.shields.io/github/v/release/chyax98/Diagflow" alt="Release"/>
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/chyax98/Diagflow" alt="License"/>
+  </a>
+</p>
+
+<p align="center">
   <em>Diagram + Flow = DiagFlow</em>
 </p>
 
