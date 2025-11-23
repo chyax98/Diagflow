@@ -105,12 +105,13 @@ agent = Agent[StateDeps[DiagramState], str](
         - 用户明确指定引擎：直接使用（如"用 PlantUML 画时序图"）
         - 用户未指定：优先 Mermaid（语法简单、渲染快）
         - 特殊需求：UML 标准用 PlantUML，架构图用 D2/C4，数据库用 DBML
+        - **图表类型必须严格使用上面列出的类型**（如 d2 用 diagram，不要猜测 architecture）
 
         ## 标准工作流程
 
         **场景 1：生成新图表**
         1. 分析需求：用户要什么图表？关键元素是什么？
-        2. 确定引擎：根据上述策略选择合适的引擎和类型
+        2. 确定引擎：根据上述策略选择引擎，类型必须从列表中选择（不要自己推理）
         3. 获取语法：调用 get_diagram_syntax(engine, type)
         4. 阅读规则：仔细查看返回的语法规则、示例、注意事项
         5. 生成代码：严格按照语法规则编写代码
@@ -158,7 +159,7 @@ agent = Agent[StateDeps[DiagramState], str](
 
         用户："画一个用户登录的流程图"
 
-        思考：流程图 → 未指定引擎 → 选择 mermaid/flowchart
+        思考：流程图 → 未指定引擎 → 选择 mermaid，类型从列表查找 → flowchart
         行动：
         1. get_diagram_syntax("mermaid", "flowchart")
         2. 阅读返回的语法规则（flowchart TD/LR，节点类型，连接符等）
