@@ -39,7 +39,7 @@
 
 ---
 
-## 快速开始（本地）
+## 快速开始（本地开发）
 
 ```bash
 # 1. 安装依赖
@@ -50,12 +50,16 @@ cp agent/.env.example agent/.env
 vim agent/.env  # 填写 OPENAI_API_KEY
 
 # 3. 启动
-pnpm dev  # 前端 :3000 + 后端 :8000
+pnpm dev  # 前端 :30000 + 后端 :30001
 ```
+
+访问 http://localhost:30000
 
 ---
 
 ## Docker 部署
+
+### 方式一：从 ghcr.io 拉取镜像（推荐）
 
 ```bash
 # 1. 配置
@@ -63,18 +67,31 @@ cp .env.example .env
 vim .env  # 填写 OPENAI_API_KEY
 
 # 2. 启动
-./docker-start.sh
-# 或 docker-compose up -d
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-**访问**:
-- 前端：http://localhost:3000
-- 后端：http://localhost:8000
+### 方式二：本地构建
+
+```bash
+# 1. 配置
+cp .env.example .env
+vim .env  # 填写 OPENAI_API_KEY
+
+# 2. 构建并启动
+docker compose up -d --build
+```
+
+**访问**: http://localhost:3000
 
 **环境变量**:
-- `OPENAI_API_KEY` (必需)
-- `OPENAI_BASE_URL` (可选，默认 Moonshot)
-- `LOGFIRE_TOKEN` (可选，生产监控)
+
+| 变量 | 必需 | 说明 |
+|------|------|------|
+| `OPENAI_API_KEY` | 是 | OpenAI API Key |
+| `OPENAI_BASE_URL` | 否 | API 地址（默认 Moonshot） |
+| `OPENAI_MODEL` | 否 | 模型名（默认 kimi-k2-thinking） |
+| `KROKI_BASE_URL` | 否 | Kroki 服务地址 |
+| `LOGFIRE_TOKEN` | 否 | Logfire 监控 Token |
 
 ---
 

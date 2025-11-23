@@ -1,0 +1,47 @@
+# 生产部署配置 - 使用 ghcr.io 镜像
+# 用法: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  # ============================================
+  # 前端服务 (Next.js)
+  # ============================================
+  frontend:
+    image: ghcr.io/chyax98/diagflow-frontend:latest
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - AGENT_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ============================================
+  # 后端服务 (FastAPI)
+  # ============================================
+  backend:
+    image: ghcr.io/chyax98/diagflow-backend:latest
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.moonshot.cn/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-kimi-k2-thinking}
+      - KROKI_BASE_URL=${KROKI_BASE_URL:-https://kroki.io}
+      - PORT=8000
+      - ENV=production
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  app-network:
+    driver: bridge
