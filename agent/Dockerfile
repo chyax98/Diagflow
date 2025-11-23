@@ -57,4 +57,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()" || exit 1
 
 # 启动应用
-CMD ["python", "src/main.py"]
+# 注意：必须在 src 目录内启动，因为代码使用相对导入（from agent import）
+WORKDIR /app/src
+CMD ["python", "main.py"]
