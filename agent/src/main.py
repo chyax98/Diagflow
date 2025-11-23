@@ -8,10 +8,10 @@ from agent import agent, StateDeps, DiagramState
 from pydantic_ai.ag_ui import AGUIApp
 from kroki_client import render_diagram
 
-# 配置 Logfire：启用本地日志，只记录关键信息
+# 配置 Logfire：完全禁用，避免网络连接干扰
 logfire.configure(
-    send_to_logfire='if-token-present',  # 有 token 时发送到云端，否则本地记录
-    console=False,  # 不输出到控制台（避免干扰）
+    send_to_logfire=False,  # 完全禁用云端发送
+    console=False,  # 不输出到控制台
 )
 
 # 健康检查端点
@@ -75,7 +75,8 @@ app = AGUIApp(
     ]
 )
 
-logfire.instrument_fastapi(app, capture_headers=False)  # 启用 FastAPI 追踪，不捕获敏感 headers
+# 禁用 Logfire 追踪，避免网络连接问题
+# logfire.instrument_fastapi(app, capture_headers=False)
 
 if __name__ == "__main__":
     # run the app
