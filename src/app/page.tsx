@@ -76,11 +76,11 @@ LAYOUT_WITH_LEGEND()
 // 自定义 Header 组件，包含清空对话按钮
 function CustomHeader({}: HeaderProps) {
   const { setOpen, icons, labels } = useChatContext();
-  const { setMessages } = useCopilotChat();
+  const { reset } = useCopilotChat();
 
   const handleClearChat = () => {
-    // 直接清空所有消息，让 CopilotKit 自动显示初始欢迎语
-    setMessages([]);
+    // 使用 reset() 方法清空对话，CopilotKit 会自动重新显示初始欢迎语
+    reset();
 
     toast("对话已重置", {
       duration: 2000,

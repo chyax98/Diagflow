@@ -13,13 +13,12 @@ ENV UV_SYSTEM_PYTHON=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# 复制依赖文件
-COPY pyproject.toml ./
+# 复制依赖文件和源代码
+COPY pyproject.toml uv.lock ./
+COPY src ./src
 
-# 安装依赖到虚拟环境
-RUN uv venv /opt/venv && \
-    . /opt/venv/bin/activate && \
-    uv pip install -e .
+# 使用锁定文件安装依赖（更快、可重现）
+RUN uv sync --frozen
 
 # ============================================
 # Stage 2: Runner (生产环境)
@@ -32,8 +31,8 @@ WORKDIR /app
 RUN groupadd --gid 1001 appuser && \
     useradd --uid 1001 --gid appuser --shell /bin/bash --create-home appuser
 
-# 从 builder 复制虚拟环境
-COPY --from=builder /opt/venv /opt/venv
+# 从 builder 复制虚拟环境（uv sync 默认创建在 .venv）
+COPY --from=builder /app/.venv /app/.venv
 
 # 复制应用代码
 COPY src ./src
@@ -46,7 +45,7 @@ RUN chown -R appuser:appuser /app
 USER appuser
 
 # 设置环境变量
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
