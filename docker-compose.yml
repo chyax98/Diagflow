@@ -38,6 +38,11 @@ services:
       - PORT=8000
       # Logfire 监控（可选）
       - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
+    # DNS 配置：解决容器内域名解析失败问题
+    dns:
+      - 223.5.5.5      # 阿里云 DNS（国内快）
+      - 8.8.8.8        # Google DNS（备用）
+      - 1.1.1.1        # Cloudflare DNS（备用）
     networks:
       - app-network
     restart: unless-stopped
