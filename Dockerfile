@@ -11,8 +11,8 @@ WORKDIR /app
 # 复制依赖文件
 COPY package.json pnpm-lock.yaml ./
 
-# 安装依赖
-RUN pnpm install --frozen-lockfile
+# 安装依赖（跳过 postinstall 脚本，避免依赖 agent 目录）
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ============================================
 # Stage 2: Builder

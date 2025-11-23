@@ -12,6 +12,24 @@ updates:
     labels:
       - "dependencies"
       - "frontend"
+    # 分组相关依赖
+    groups:
+      nextjs:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+        update-types:
+          - "minor"
+          - "patch"
+      types:
+        patterns:
+          - "@types/*"
+    # 忽略大版本更新
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # 后端依赖（Python uv）
   - package-ecosystem: "pip"
