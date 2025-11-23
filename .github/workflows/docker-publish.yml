@@ -1,8 +1,14 @@
 name: Docker 镜像发布
 
 on:
+  # 推送到 main 分支自动发布
+  push:
+    branches:
+      - main
+  # Release 发布时也触发
   release:
     types: [published]
+  # 保留手动触发选项
   workflow_dispatch:
     inputs:
       tag:
@@ -13,6 +19,11 @@ on:
 env:
   REGISTRY: ghcr.io
   # 如果使用 Docker Hub，改为：docker.io/your-username
+
+# 并发控制：同一时间只运行一次镜像发布
+concurrency:
+  group: docker-publish
+  cancel-in-progress: false
 
 jobs:
   build-and-push:
