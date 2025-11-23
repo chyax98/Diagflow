@@ -1,0 +1,285 @@
+[meta]
+language = "nwdiag"
+description = "网络拓扑图生成器,使用类 Python 语法展示网络架构和节点连接"
+docs_url = "http://blockdiag.com/en/nwdiag/"
+version = "1.0.0"
+
+[types.diagram]
+description = "网络拓扑图,展示网络结构、节点分布和地址分配"
+use_cases = [
+  "网络架构设计",
+  "数据中心拓扑",
+  "多层网络规划",
+  "云网络架构",
+  "DMZ 区域划分",
+  "多机房网络"
+]
+
+syntax_rules = """
+核心语法:
+- 声明: nwdiag { ... } 包裹全部内容
+- 网络定义: network 网络名 { ... } 定义一个网络段
+- 节点声明: 节点名; 或 节点名 [address = "IP地址"];
+- 多网卡节点: 同一节点出现在多个 network 块中,自动连接多个网络
+
+网络属性:
+- address: "IP/掩码" 设置网络地址段 (如 "192.168.1.0/24")
+- width: 数字 (调整网络宽度)
+- color: "颜色" (设置网络背景色)
+
+节点属性:
+- address: "IP地址" (设置节点 IP)
+- address: ".1" (简写,自动补全网络段前缀,如 192.168.1.1)
+- address: "IP1, IP2" (多个 IP,用逗号分隔)
+- description: "描述文本"
+- shape: 节点形状
+  * cloud: 云服务 (常用于互联网)
+  * box: 矩形 (默认)
+  * square: 正方形
+  * circle: 圆形
+  * ellipse: 椭圆
+
+节点分组 (group):
+- 在 network 内定义: group 组名 { 节点1; 节点2; }
+- 在外部定义: group { color = "#颜色"; 节点1; 节点2; }
+- 分组属性:
+  * color: "颜色" (分组背景色)
+  * label: "标签" (分组名称)
+- 外部分组用于跨网络的逻辑分组 (如按机房分组)
+
+点对点连接:
+- 语法: 节点1 -- 节点2;
+- 用于直接连接两个节点,不通过 network
+- 常用于互联网接入: inet [shape = cloud]; inet -- router;
+
+地址简写规则:
+- 完整地址: address = "192.168.1.10"
+- 简写地址: address = ".10" (自动补全为 192.168.1.10)
+- 前提: 必须在声明了 address 的 network 块中
+- 多地址: address = ".10, .20" (节点有多个 IP)
+
+网络拓扑模式:
+1. 简单拓扑: 单个网络,多个节点
+2. 多层网络: DMZ + 内网 (节点跨越多个 network)
+3. 多机房: 使用外部 group 分组
+4. 互联网接入: inet [shape = cloud]; inet -- router;
+
+Kroki 限制:
+- ✓ 完全支持多网络和多地址
+- ✓ 支持节点分组和颜色
+- ✓ 支持点对点连接
+- ✓ 支持多语言文本 (UTF-8)
+- ⚠️ 网络段数量建议 ≤ 6 个
+- ⚠️ 节点总数建议 ≤ 30 个
+- ⚠️ 分组嵌套建议 ≤ 2 层
+
+常见错误:
+- 节点地址格式错误
+  * ❌ web01 [address = 192.168.1.1]
+  * ✓ web01 [address = "192.168.1.1"]
+
+- 网络地址缺少掩码
+  * ❌ address = "192.168.1.0"
+  * ✓ address = "192.168.1.0/24"
+
+- 分组语法错误
+  * ❌ group { web01; web02 }
+  * ✓ group web { web01; web02; }
+
+- 多网卡节点配置不一致
+  * ❌ network A { server; } network B { Server; }
+  * ✓ network A { server; } network B { server; }
+
+- 简写地址未在 network 中
+  * ❌ nwdiag { web [address = ".1"]; }
+  * ✓ nwdiag { network dmz { address = "10.0.0.0/24"; web [address = ".1"]; } }
+
+- 点对点连接缺少分号
+  * ❌ inet -- router
+  * ✓ inet -- router;
+
+实用技巧:
+- 使用 .1 .2 简写地址,减少重复
+- 使用 cloud 形状表示互联网
+- 使用外部 group 按机房/区域分组
+- 使用颜色区分不同层次的网络
+- 多网卡节点体现路由/网关功能
+- 使用 description 添加节点说明
+"""
+
+examples = [
+  """
+nwdiag {
+  network dmz {
+    address = "210.x.x.x/24";
+    web01 [address = "210.x.x.1"];
+    web02 [address = "210.x.x.2"];
+  }
+  network internal {
+    address = "172.x.x.x/24";
+    web01 [address = "172.x.x.1"];
+    web02 [address = "172.x.x.2"];
+    db01;
+    db02;
+  }
+}
+  """,
+  """
+nwdiag {
+  // 互联网接入拓扑
+  inet [shape = cloud];
+  inet -- router;
+
+  network dmz {
+    address = "192.168.10.0/24";
+    router [address = ".1"];
+
+    group web {
+      web01 [address = ".10"];
+      web02 [address = ".11"];
+    }
+  }
+
+  network backend {
+    address = "192.168.20.0/24";
+    router [address = ".1"];
+    web01 [address = ".10"];
+    web02 [address = ".11"];
+
+    group database {
+      db01 [address = ".100"];
+      db02 [address = ".101"];
+    }
+  }
+}
+  """,
+  """
+nwdiag {
+  // 多数据中心架构
+  group {
+    color = "#FF7777";
+    label = "北京机房";
+    web01;
+    db01;
+  }
+
+  group {
+    color = "#77FF77";
+    label = "上海机房";
+    web02;
+    db02;
+  }
+
+  network frontend {
+    address = "10.1.0.0/16";
+    web01 [address = "10.1.1.10, 10.1.1.20"];
+    web02 [address = "10.1.2.10"];
+  }
+
+  network backend {
+    address = "10.2.0.0/16";
+    web01 [address = "10.2.1.10"];
+    web02 [address = "10.2.2.10"];
+    db01 [address = "10.2.1.100"];
+    db02 [address = "10.2.2.100"];
+  }
+}
+  """,
+  """
+nwdiag {
+  // 典型的三层网络架构
+  internet [shape = cloud, description = "互联网"];
+  internet -- firewall;
+
+  network dmz {
+    address = "203.0.113.0/24";
+    color = "#FFE0B2";
+
+    firewall [address = ".1", description = "边界防火墙"];
+    lb [address = ".10", description = "负载均衡器"];
+
+    group webservers {
+      web01 [address = ".20"];
+      web02 [address = ".21"];
+    }
+  }
+
+  network app {
+    address = "172.16.0.0/16";
+    color = "#C5E1A5";
+
+    web01 [address = ".10"];
+    web02 [address = ".11"];
+
+    group appservers {
+      app01 [address = ".20"];
+      app02 [address = ".21"];
+      app03 [address = ".22"];
+    }
+  }
+
+  network data {
+    address = "10.0.0.0/8";
+    color = "#B2DFDB";
+
+    app01 [address = ".10"];
+    app02 [address = ".11"];
+    app03 [address = ".12"];
+
+    group databases {
+      db_master [address = ".100", description = "主库"];
+      db_slave1 [address = ".101", description = "从库1"];
+      db_slave2 [address = ".102", description = "从库2"];
+    }
+
+    group cache {
+      redis01 [address = ".200"];
+      redis02 [address = ".201"];
+    }
+  }
+}
+  """,
+  """
+nwdiag {
+  // Kubernetes 集群网络示例
+  inet [shape = cloud];
+  inet -- lb;
+
+  network external {
+    address = "1.2.3.0/24";
+    lb [address = ".10", description = "Ingress LB"];
+  }
+
+  network cluster {
+    address = "10.244.0.0/16";
+    color = "#E1F5FE";
+
+    lb [address = ".1"];
+
+    group masters {
+      master01 [address = ".10"];
+      master02 [address = ".11"];
+      master03 [address = ".12"];
+    }
+
+    group workers {
+      worker01 [address = ".20"];
+      worker02 [address = ".21"];
+      worker03 [address = ".22"];
+      worker04 [address = ".23"];
+    }
+  }
+
+  network storage {
+    address = "192.168.100.0/24";
+    color = "#F3E5F5";
+
+    master01 [address = ".10"];
+    master02 [address = ".11"];
+    master03 [address = ".12"];
+
+    nfs [address = ".200", description = "NFS 存储"];
+  }
+}
+  """
+]

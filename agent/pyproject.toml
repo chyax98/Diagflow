@@ -1,0 +1,14 @@
+[project]
+name = "diagflow-agent"
+version = "1.0.0"
+description = "DiagFlow AI Agent - 智能图表生成引擎"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "uvicorn",
+    "fastapi",
+    "pydantic-ai-slim[ag-ui]>=1.22.0",
+    "pydantic-ai-slim[openai]>=1.22.0",
+    "python-dotenv",
+    "logfire[fastapi]>=4.10.0",
+]

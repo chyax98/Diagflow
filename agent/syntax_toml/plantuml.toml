@@ -1,0 +1,1285 @@
+[meta]
+language = "plantuml"
+description = "强大的 UML 图表语言，支持多种 UML 图表类型和丰富的自定义功能"
+docs_url = "https://plantuml.com/"
+version = "1.0.0"
+
+[types.sequence]
+description = "时序图，展示系统组件之间的交互和消息传递"
+use_cases = ["交互设计", "API调用流程", "系统间通信", "业务流程交互", "协议设计"]
+
+syntax_rules = """
+核心语法：
+- 声明包裹:
+  * 强制规则: @startuml 和 @enduml 包裹所有内容
+  * 缺少会导致渲染失败
+
+- 参与者类型:
+  * participant - 矩形框（通用参与者）
+  * actor - 人形图标（真人用户）
+  * boundary - 边界（系统边界）
+  * control - 控制器（业务逻辑）
+  * entity - 实体（数据对象）
+  * database - 数据库（存储系统）
+  * queue - 队列（消息队列）
+  * collections - 集合
+
+- 参与者声明:
+  * 语法: participant "显示名" as 别名
+  * 示例: participant "前端" as Frontend
+  * 声明顺序决定从左到右的显示顺序
+  * 别名用于后续引用
+
+- 箭头类型详解:
+  * -> 实线同步调用（开放箭头）
+  * --> 实线同步返回（开放箭头）
+  * ->> 实线异步消息（实心箭头）
+  * -->> 实线异步响应（实心箭头）
+  * ->x 丢失消息（X 标记）
+  * ->o 终止消息（圆圈标记）
+  * <-> 双向消息
+  * <--> 双向同步消息
+
+- 箭头样式:
+  * 实线: - 或 -
+  * 虚线: -- 或 --
+  * 粗线: -[] 或 --[]
+
+- 激活状态管理:
+  * 显式方式: activate 参与者 ... deactivate 参与者
+  * 自动方式: ++ 激活，-- 去激活（推荐）
+  * 示例: A -> B++ : 请求（激活 B）
+  * 示例: B --> A-- : 响应（去激活 B）
+  * 必须正确配对，否则生命线错误
+
+- 分组结构:
+  * alt/else/end - 条件分支（二选一或多选一）
+  * opt/end - 可选流程（执行或不执行）
+  * loop/end - 循环流程
+  * par/end - 并行流程
+  * break/end - 中断流程
+  * critical/end - 关键区域
+  * group 标题/end - 逻辑分组
+  * 最大嵌套层级 ≤3 层
+
+- 特殊字符处理:
+  * 包含 []{}() 的文本必须用双引号包裹
+  * 示例: "POST /api/login"
+  * 示例: "get[index]"
+
+- 消息文本:
+  * 语法: A -> B: 消息内容
+  * 支持多行: A -> B: 第一行\\n第二行
+
+高级语法：
+- 自动编号:
+  * autonumber - 从 1 开始自动编号
+  * autonumber 10 - 从 10 开始
+  * autonumber 10 5 - 从 10 开始，步长 5
+  * autonumber stop - 停止编号
+  * autonumber resume - 恢复编号
+
+- 延迟标记:
+  * 语法: ...
+  * 或: ...5 分钟后...
+  * 表示时间流逝或异步等待
+
+- 消息序号:
+  * 语法: A -> B: <font color=red><b>1.</b></font> 消息
+  * 手动添加序号和样式
+
+- 返回消息:
+  * 语法: return 返回内容
+  * 自动返回到最近的调用者
+
+- 引用/片段:
+  * ref over A,B: 引用内容
+  * 用于标注外部交互或文档引用
+
+- 注释:
+  * note left: 左侧注释
+  * note right: 右侧注释
+  * note over A: 在 A 上方注释
+  * note over A,B: 跨 A 和 B 注释
+  * hnote - 六边形注释
+  * rnote - 矩形注释
+
+- 分隔符:
+  * == 标题 == - 逻辑分段
+  * 用于分隔不同阶段
+
+- 生命线操作:
+  * destroy 参与者 - 销毁参与者
+  * create 参与者 - 创建参与者
+
+- 消息延迟:
+  * A -[#red]> B - 红色箭头
+  * A -[#0000FF]> B - 蓝色箭头（十六进制）
+
+设计建议：
+- 参与者数量: 3-8 个为佳
+- 消息数量: 15-40 条
+- 嵌套层级: ≤3 层
+- 激活框: 避免过长的激活
+- 逻辑分组: 使用 group 和 == 分段
+
+Kroki 限制：
+- ✓ 完全支持所有参与者类型
+- ✓ 支持所有箭头类型
+- ✓ 支持嵌套分组（≤3 层）
+- ✓ 支持自动编号
+- ⚠️ 参与者建议 ≤10 个
+- ⚠️ 消息建议 ≤60 条
+
+常见错误排查：
+1. 缺少包裹标记
+   ❌ actor 用户
+      用户 -> 系统
+   ✓ @startuml
+      actor 用户
+      用户 -> 系统
+      @enduml
+
+2. 激活框未配对
+   ❌ A -> B++
+      （缺少去激活）
+   ✓ A -> B++
+      B --> A--
+
+3. 分组未闭合
+   ❌ alt 成功
+          A -> B
+      （缺少 end）
+   ✓ alt 成功
+          A -> B
+      end
+
+4. 特殊字符未引号
+   ❌ A -> B: POST /api/login
+   ✓ A -> B: "POST /api/login"
+
+5. 别名不一致
+   ❌ participant API as api
+      API -> User（大小写不一致）
+   ✓ participant API as api
+      api -> User
+"""
+
+examples = [
+  """@startuml
+actor 用户
+participant "前端" as Frontend
+control "后端API" as Backend
+database "数据库" as DB
+
+用户 -> Frontend: 登录请求
+activate Frontend
+Frontend -> Backend: "POST /api/login"
+activate Backend
+Backend -> DB: 查询用户
+activate DB
+DB --> Backend: 返回用户数据
+deactivate DB
+alt 验证成功
+    Backend --> Frontend: 返回Token
+else 验证失败
+    Backend --> Frontend: 返回错误
+end
+deactivate Backend
+Frontend --> 用户: 显示结果
+deactivate Frontend
+@enduml""",
+
+  """@startuml
+autonumber
+actor 用户
+participant "Web界面" as Web
+participant "API网关" as Gateway
+participant "用户服务" as UserService
+database "用户数据库" as UserDB
+
+== 认证阶段 ==
+用户 -> Web: 输入账号密码
+Web -> Gateway: "POST /auth/login"
+activate Gateway
+Gateway -> UserService++: 验证请求
+
+UserService -> UserDB++: 查询用户
+UserDB --> UserService--: 用户信息
+
+alt 凭据正确
+    UserService -> UserService: 生成Token
+    UserService --> Gateway--: Token
+    Gateway --> Web: 认证成功
+    Web --> 用户: 跳转主页
+else 凭据错误
+    UserService --> Gateway--: 错误信息
+    Gateway --> Web: 401 未授权
+    Web --> 用户: 显示错误
+end
+deactivate Gateway
+
+@enduml""",
+
+  """@startuml
+participant "客户端" as Client
+participant "负载均衡" as LB
+queue "消息队列" as MQ
+collections "服务集群" as Services
+database "数据库" as DB
+
+Client -> LB++: HTTP请求
+
+par 并行处理
+    LB -> Services++: 转发请求1
+    Services -> DB++: 查询数据
+    DB --> Services--: 返回数据
+    Services --> LB--: 响应1
+else
+    LB -> Services++: 转发请求2
+    Services -> DB++: 查询数据
+    DB --> Services--: 返回数据
+    Services --> LB--: 响应2
+end
+
+LB -> MQ: 发送日志消息
+LB --> Client--: 返回聚合结果
+
+note over MQ: 异步处理日志
+MQ -> Services: 消费日志消息
+
+@enduml"""
+]
+
+[types.class]
+description = "类图，展示面向对象设计中的类和关系"
+use_cases = ["面向对象设计", "系统架构", "领域建模", "设计模式", "API设计"]
+
+syntax_rules = """
+核心语法：
+- 声明包裹:
+  * @startuml 和 @enduml 包裹所有内容
+
+- 类定义方式:
+  * 方式1（推荐）:
+    class 类名 {
+        属性
+        方法
+    }
+  * 方式2（简化）:
+    class 类名
+
+- 可见性修饰符（必须标注）:
+  * - private（私有）
+  * + public（公开）
+  * # protected（受保护）
+  * ~ package（包级别）
+
+- 属性语法:
+  * 格式: 可见性 类型 名称
+  * 示例: - String name
+  * 示例: + int age
+  * 静态属性: {static} 或下划线
+  * 示例: - {static} int count
+
+- 方法语法:
+  * 格式: 可见性 返回类型 方法名(参数类型 参数名)
+  * 示例: + void setName(String name)
+  * 示例: + String getName()
+  * 静态方法: {static}
+  * 示例: + {static} getInstance() Singleton
+  * 抽象方法: {abstract}
+  * 示例: + {abstract} void eat()
+
+- 关系类型:
+  * <|-- 继承（实线三角箭头，子类→父类）
+  * <|.. 实现（虚线三角箭头，实现类→接口）
+  * *-- 组合（实心菱形，整体→部分，生命周期绑定）
+  * o-- 聚合（空心菱形，整体→部分，生命周期独立）
+  * --> 关联（实线箭头）
+  * ..> 依赖（虚线箭头）
+  * -- 无方向关联
+
+- 关系方向规则:
+  * 继承/实现: 子类→父类，实现类→接口
+  * 组合/聚合: 整体→部分
+  * 关联/依赖: 根据语义决定
+
+- 类修饰符:
+  * abstract class 抽象类名 - 抽象类
+  * interface 接口名 - 接口
+  * class 类名 <<stereotype>> - 构造型
+  * 常用构造型: <<interface>>, <<abstract>>, <<enumeration>>, <<entity>>, <<service>>
+
+- 基数/多重性:
+  * 语法: "1", "0..1", "1..*", "*", "0..*"
+  * 示例: Class1 "1" --> "0..*" Class2
+
+- 命名规范:
+  * 类名: PascalCase（如 UserService）
+  * 方法/属性: camelCase（如 getUserName）
+  * 常量: UPPER_SNAKE_CASE（如 MAX_SIZE）
+
+高级语法：
+- 泛型:
+  * 语法: class List<T>
+  * 示例: class Map<K,V>
+
+- 枚举类:
+  * 语法:
+    enum 枚举名 {
+        值1
+        值2
+    }
+  * 或使用 <<enumeration>> 构造型
+
+- 内部类:
+  * 语法:
+    class Outer {
+        class Inner
+    }
+
+- 抽象类和方法:
+  * 抽象类: abstract class 类名
+  * 抽象方法: {abstract} 或斜体标记
+
+- 包/命名空间:
+  * 语法:
+    package 包名 {
+        class 类名
+    }
+
+- 注释:
+  * note left of 类名: 注释
+  * note right of 类名: 注释
+  * note top of 类名: 注释
+  * note bottom of 类名: 注释
+  * note "注释" as N1
+  * 类名 .. N1
+
+- 样式定制:
+  * 类名 #线条颜色 - 设置边框颜色
+  * 类名 ##背景颜色 - 设置背景色
+  * 示例: class User #red
+
+- 关系标签:
+  * 语法: Class1 --> Class2 : 标签
+  * 示例: Dog --|> Animal : extends
+
+- 隐藏成员:
+  * hide 类名 members - 隐藏成员
+  * hide empty members - 隐藏空成员
+  * show 类名 methods - 只显示方法
+
+设计建议：
+- 类数量: 5-20 个为佳
+- 关系数量: 8-30 条
+- 继承层级: ≤5 层
+- 每个类: 3-10 个属性/方法
+- 避免循环依赖
+
+Kroki 限制：
+- ✓ 完全支持所有关系类型
+- ✓ 支持泛型
+- ✓ 支持枚举和抽象类
+- ✓ 支持包/命名空间
+- ⚠️ 类建议 ≤30 个
+- ⚠️ 关系建议 ≤50 条
+
+常见错误排查：
+1. 缺少可见性修饰符
+   ❌ String name
+   ✓ + String name
+
+2. 关系方向错误
+   ❌ Animal <|-- Dog（父类→子类错误）
+   ✓ Dog --|> Animal（子类→父类正确）
+
+3. 抽象方法语法错误
+   ❌ abstract void eat()
+   ✓ + {abstract} void eat()
+
+4. 泛型语法错误（PlantUML支持<>）
+   ✓ class List<T>
+   ✓ class Map<K,V>
+
+5. 方法参数格式错误
+   ❌ + setName(name)
+   ✓ + setName(String name)
+"""
+
+examples = [
+  """@startuml
+abstract class Animal {
+    - String name
+    - int age
+    + {abstract} void eat()
+    + void sleep()
+}
+
+class Dog {
+    - String breed
+    + void bark()
+    + void eat()
+}
+
+class Cat {
+    - boolean indoor
+    + void meow()
+    + void eat()
+}
+
+Animal <|-- Dog
+Animal <|-- Cat
+@enduml""",
+
+  """@startuml
+interface Shape {
+    + {abstract} double area()
+    + {abstract} double perimeter()
+}
+
+enum Color {
+    RED
+    GREEN
+    BLUE
+}
+
+class Circle {
+    - double radius
+    - Color color
+    + Circle(double r)
+    + double area()
+    + double perimeter()
+    + void setColor(Color c)
+}
+
+class Rectangle {
+    - double width
+    - double height
+    + Rectangle(double w, double h)
+    + double area()
+    + double perimeter()
+}
+
+Shape <|.. Circle
+Shape <|.. Rectangle
+Circle --> Color : uses
+
+note right of Circle: 圆形实现
+note right of Rectangle: 矩形实现
+@enduml""",
+
+  """@startuml
+package "电商系统" {
+    class Order {
+        - int orderId
+        - Date orderDate
+        - OrderStatus status
+        + void placeOrder()
+        + void cancel()
+        + double getTotal()
+    }
+
+    class OrderItem {
+        - int quantity
+        - double price
+        + double getSubtotal()
+    }
+
+    class Product {
+        - int productId
+        - String name
+        - double price
+        - int stock
+        + void updateStock(int delta)
+    }
+
+    class Customer {
+        - int customerId
+        - String name
+        - String email
+        + void register()
+        + void login()
+    }
+
+    enum OrderStatus {
+        PENDING
+        PAID
+        SHIPPED
+        DELIVERED
+        CANCELLED
+    }
+}
+
+Order *-- OrderItem : contains "1..*"
+OrderItem --> Product : refers "1"
+Customer "1" --> "0..*" Order : places
+Order --> OrderStatus : has
+
+note top of Order: 订单聚合根
+note right of OrderStatus: 订单状态枚举
+@enduml"""
+]
+
+[types.activity]
+description = "活动图，展示业务流程和工作流"
+use_cases = ["业务流程建模", "工作流设计", "算法逻辑展示", "审批流程", "操作步骤"]
+
+syntax_rules = """
+核心语法：
+- 声明包裹:
+  * @startuml 和 @enduml 包裹所有内容
+
+- 起止标识:
+  * start 或 (*) - 开始节点
+  * stop 或 (*) - 正常结束节点
+  * end 或 (*top) - 异常终止节点
+
+- 活动节点:
+  * 基本语法: :活动名称;
+  * 带颜色: #color:活动名称;
+  * 示例: :处理订单;
+  * 示例: #lightblue:验证用户;
+
+- 决策节点（if-then-else）:
+  * 语法:
+    if (条件?) then (是)
+        :活动A;
+    else (否)
+        :活动B;
+    endif
+  * 支持 elseif:
+    if (条件1?) then
+        :活动A;
+    elseif (条件2?) then
+        :活动B;
+    else
+        :活动C;
+    endif
+
+- 多分支决策（switch）:
+  * 语法:
+    switch (变量)
+    case (值1)
+        :活动1;
+    case (值2)
+        :活动2;
+    endswitch
+
+- 并行活动（fork-join）:
+  * 语法:
+    fork
+        :活动1;
+    fork again
+        :活动2;
+    fork again
+        :活动3;
+    end fork
+  * 所有分支并发执行，完成后汇聚
+
+- 分割活动（split）:
+  * 语法:
+    split
+        :活动1;
+    split again
+        :活动2;
+    end split
+  * 同时开始，独立结束
+
+- 循环（while）:
+  * 语法:
+    while (条件?) is (是)
+        :循环体;
+    endwhile (否)
+
+- 重复循环（repeat）:
+  * 语法:
+    repeat
+        :循环体;
+    backward:返回;
+    repeat while (条件?)
+
+- 泳道分组:
+  * 语法: |泳道名称|
+  * 代表角色/部门/系统
+  * 示例:
+    |用户|
+    :提交申请;
+    |管理员|
+    :审批申请;
+
+- 注释:
+  * note left: 左侧注释
+  * note right: 右侧注释
+  * floating note: 浮动注释
+
+- 分隔符:
+  * ==阶段标题== - 逻辑分段
+  * 用于分隔不同阶段
+
+高级语法：
+- 后向箭头:
+  * 语法: backward:返回;
+  * 用于循环返回
+
+- 分离路径:
+  * detach - 终止当前路径（不影响其他路径）
+
+- 信号:
+  * kill - 发送中断信号
+  * #yellow;kill;
+
+- 连接器:
+  * (A) - 定义连接点
+  * goto (A) - 跳转到连接点
+
+- 条件表达式:
+  * 支持 and, or, not
+  * 示例: if (条件A and 条件B) then
+
+- 数据对象:
+  * :活动; -> [数据]
+  * [数据] -> :活动;
+
+设计建议：
+- 活动数量: 10-30 个
+- 决策节点: 3-8 个
+- 并行活动: ≤4 个分支
+- 泳道数量: 3-6 个
+- 避免悬空分支
+- 循环必须有退出条件
+
+Kroki 限制：
+- ✓ 完全支持所有控制结构
+- ✓ 支持泳道
+- ✓ 支持并行和循环
+- ⚠️ 活动节点建议 ≤50 个
+- ⚠️ 泳道建议 ≤8 个
+
+常见错误排查：
+1. 决策未闭合
+   ❌ if (条件?) then
+          :活动;
+      （缺少 endif）
+   ✓ if (条件?) then
+          :活动;
+      endif
+
+2. 并行活动未闭合
+   ❌ fork
+          :活动1;
+      fork again
+          :活动2;
+      （缺少 end fork）
+   ✓ fork
+          :活动1;
+      fork again
+          :活动2;
+      end fork
+
+3. 循环未闭合
+   ❌ while (条件?)
+          :活动;
+      （缺少 endwhile）
+   ✓ while (条件?) is (是)
+          :活动;
+      endwhile (否)
+
+4. 泳道语法错误
+   ❌ |用户
+   ✓ |用户|
+
+5. 活动缺少分号
+   ❌ :处理订单
+   ✓ :处理订单;
+"""
+
+examples = [
+  """@startuml
+start
+:用户提交订单;
+if (库存充足?) then (是)
+  :扣减库存;
+  :生成订单;
+  :发送确认邮件;
+else (否)
+  :通知用户缺货;
+  stop
+endif
+:完成订单;
+stop
+@enduml""",
+
+  """@startuml
+|用户|
+start
+:填写申请表;
+:提交申请;
+
+|系统|
+:接收申请;
+:自动验证;
+
+if (验证通过?) then (是)
+  |管理员|
+  :人工审批;
+
+  if (审批通过?) then (是)
+    :发送批准通知;
+  else (否)
+    :发送拒绝通知;
+    stop
+  endif
+else (否)
+  |系统|
+  :发送验证失败通知;
+  stop
+endif
+
+|用户|
+:收到通知;
+stop
+@enduml""",
+
+  """@startuml
+start
+
+==初始化阶段==
+:加载配置;
+:连接数据库;
+
+==处理阶段==
+fork
+  :处理任务A;
+fork again
+  :处理任务B;
+fork again
+  :处理任务C;
+end fork
+
+==验证阶段==
+while (有未处理项?) is (是)
+  :处理下一项;
+  if (处理成功?) then (是)
+    :记录成功;
+  else (否)
+    :记录失败;
+  endif
+endwhile (否)
+
+==清理阶段==
+:关闭连接;
+:生成报告;
+
+stop
+@enduml"""
+]
+
+[types.component]
+description = "组件图，展示系统架构和模块依赖"
+use_cases = ["系统架构设计", "模块化设计", "服务依赖关系", "接口定义", "微服务架构"]
+
+syntax_rules = """
+核心语法：
+- 声明包裹:
+  * @startuml 和 @enduml 包裹所有内容
+
+- 组件声明:
+  * 方式1: [组件名称]
+  * 方式2: component "组件名称" as 别名
+  * 示例: [Web界面]
+  * 示例: component "用户服务" as UserService
+
+- 构造型（Stereotype）:
+  * 语法: [组件名] <<stereotype>>
+  * 常用构造型:
+    - <<service>> - 服务
+    - <<library>> - 库
+    - <<database>> - 数据库
+    - <<api>> - API
+    - <<ui>> - 用户界面
+    - <<queue>> - 队列
+    - <<cache>> - 缓存
+  * 示例: [用户服务] <<service>>
+
+- 接口声明:
+  * 提供接口（lollipop）: () "接口名称"
+  * 需要接口（socket）: interface 接口名称
+  * 示例: () "HTTP API"
+  * 示例: interface "数据库接口"
+
+- 依赖关系:
+  * ..> 使用依赖（虚线箭头）
+  * --> 关联（实线箭头）
+  * *-- 组合（实心菱形）
+  * o-- 聚合（空心菱形）
+  * -- 无方向连接
+
+- 接口连接:
+  * 提供接口: 组件 -( 接口
+  * 需要接口: 组件 )- 接口
+  * 直接连接: 组件1 -- 组件2
+
+- 分组容器:
+  * package "包名称" { ... }
+  * node "节点名称" { ... }
+  * database "数据库名称" { ... }
+  * cloud "云服务名称" { ... }
+  * folder "文件夹名称" { ... }
+  * frame "框架名称" { ... }
+
+- 端口:
+  * 语法: port "端口名称" as 别名
+  * 或: portin/portout 区分输入输出
+
+- 层次架构规则:
+  * UI 层 → 业务层 → 数据层
+  * 单向依赖，避免跨层
+  * 避免循环依赖
+
+高级语法：
+- 接口详细定义:
+  * interface "接口名" as I1 {
+        方法1()
+        方法2()
+    }
+
+- 组件详细定义:
+  * component "组件名" as C1 {
+        数据
+        行为
+    }
+
+- 链接样式:
+  * 组件1 -[#red]-> 组件2 - 红色箭头
+  * 组件1 -[#blue,dashed]-> 组件2 - 蓝色虚线
+
+- 链接标签:
+  * 组件1 --> 组件2 : 标签
+  * 示例: [前端] --> [后端] : HTTP
+
+- 注释:
+  * note left of 组件: 注释
+  * note right of 组件: 注释
+  * note top of 组件: 注释
+  * note bottom of 组件: 注释
+
+- 隐藏元素:
+  * hide 组件名
+  * remove 组件名
+
+设计建议：
+- 组件数量: 5-15 个为佳
+- 接口数量: 3-10 个
+- 分组层级: ≤3 层
+- 依赖关系: 清晰单向
+- 命名规范: 使用有意义的名称
+- 粒度适中: 不要过细或过粗
+
+典型架构模式：
+- 三层架构: UI → Business → Data
+- 微服务: Service1 ↔ Service2 ↔ Service3
+- 插件架构: Core → Plugin1/Plugin2/Plugin3
+- 事件驱动: Component → EventBus → Component
+
+Kroki 限制：
+- ✓ 完全支持所有组件类型
+- ✓ 支持接口定义
+- ✓ 支持分组容器
+- ⚠️ 组件建议 ≤30 个
+- ⚠️ 连接建议 ≤50 条
+
+常见错误排查：
+1. 组件名称未使用方括号
+   ❌ 组件A --> 组件B
+   ✓ [组件A] --> [组件B]
+
+2. 构造型语法错误
+   ❌ [组件] <service>
+   ✓ [组件] <<service>>
+
+3. 接口连接方向错误
+   ❌ 组件 (- 接口（需要接口用错符号）
+   ✓ 组件 )- 接口（需要接口）
+   ✓ 组件 -( 接口（提供接口）
+
+4. 分组未闭合
+   ❌ package "包名" {
+          [组件]
+      （缺少闭合括号）
+   ✓ package "包名" {
+          [组件]
+      }
+
+5. 循环依赖
+   ❌ [A] --> [B]
+      [B] --> [A]
+   ✓ 重新设计，消除循环
+"""
+
+examples = [
+  """@startuml
+package "前端层" {
+    [Web界面] <<ui>>
+}
+
+package "业务层" {
+    [用户服务] <<service>>
+    [订单服务] <<service>>
+}
+
+package "数据层" {
+    database "用户数据库" {
+        [用户表]
+    }
+    database "订单数据库" {
+        [订单表]
+    }
+}
+
+[Web界面] --> [用户服务]
+[Web界面] --> [订单服务]
+[用户服务] --> [用户表]
+[订单服务] --> [订单表]
+@enduml""",
+
+  """@startuml
+cloud "微服务架构" {
+    [API网关] <<service>>
+
+    package "业务服务" {
+        [认证服务] <<service>>
+        [用户服务] <<service>>
+        [订单服务] <<service>>
+    }
+
+    package "基础设施" {
+        [配置中心] <<service>>
+        [服务注册] <<service>>
+        database "Redis" <<cache>>
+    }
+}
+
+() "HTTP API" as http
+[API网关] -( http
+
+[API网关] ..> [认证服务] : 验证
+[API网关] ..> [用户服务] : 调用
+[API网关] ..> [订单服务] : 调用
+
+[认证服务] --> [Redis]
+[用户服务] --> [配置中心]
+[订单服务] --> [配置中心]
+
+[认证服务] --> [服务注册] : 注册
+[用户服务] --> [服务注册] : 注册
+[订单服务] --> [服务注册] : 注册
+
+note right of [API网关]: 统一入口
+note right of [服务注册]: 服务发现
+@enduml""",
+
+  """@startuml
+node "Web服务器" {
+    [Nginx] <<service>>
+    [静态资源]
+}
+
+node "应用服务器" {
+    [Spring Boot] <<service>>
+    [业务逻辑] <<library>>
+}
+
+node "数据服务器" {
+    database "MySQL" <<database>>
+    database "Redis" <<cache>>
+}
+
+actor 用户
+用户 --> [Nginx] : HTTPS
+[Nginx] --> [静态资源]
+[Nginx] --> [Spring Boot] : 反向代理
+
+[Spring Boot] *-- [业务逻辑]
+[业务逻辑] --> [MySQL] : JDBC
+[业务逻辑] --> [Redis] : 缓存
+
+note bottom of [Nginx]: 负载均衡和反向代理
+note bottom of [Redis]: 会话缓存
+@enduml"""
+]
+
+[types.deployment]
+description = "部署图，展示系统物理部署和网络拓扑"
+use_cases = ["系统部署架构", "物理拓扑", "云架构设计", "混合云部署", "容器编排"]
+
+syntax_rules = """
+核心语法：
+- 声明包裹:
+  * @startuml 和 @enduml 包裹所有内容
+
+- 节点类型:
+  * node "节点名称" - 通用节点/服务器
+  * artifact "工件名称" - 软件工件/应用
+  * database "数据库名称" - 数据库
+  * cloud "云服务名称" - 云服务
+  * folder "文件夹名称" - 文件夹
+  * package "软件包名称" - 软件包
+  * frame "框架名称" - 框架容器
+  * storage "存储名称" - 存储设备
+
+- 部署关系:
+  * 嵌套方式（推荐）:
+    node "服务器" {
+        artifact "应用"
+    }
+  * 连接方式:
+    node "服务器"
+    artifact "应用"
+    "服务器" -> "应用"
+
+- 通信协议:
+  * --> 有向通信
+  * -- 双向通信
+  * 标签标注协议
+  * 示例: [前端] --> [后端] : HTTP
+  * 示例: [应用] --> [数据库] : JDBC
+
+- 嵌套层次:
+  * 层次结构: package/cloud → node → artifact
+  * 最大层级 ≤3 层
+  * 示例:
+    cloud "阿里云" {
+        node "Web服务器" {
+            artifact "Nginx"
+        }
+    }
+
+- 连接样式:
+  * 实线: -- 或 -->
+  * 虚线: .. 或 ..>
+  * 粗线: == 或 ==>
+
+- 网络标记:
+  * 语法: [节点1] --> [节点2] : 协议
+  * 示例: [客户端] --> [服务器] : HTTPS
+
+高级语法：
+- 构造型:
+  * node "名称" <<stereotype>>
+  * 示例: node "Web服务器" <<Apache>>
+  * 示例: database "MySQL" <<5.7>>
+
+- 链接颜色:
+  * [节点1] -[#red]-> [节点2]
+  * [节点1] -[#0000FF]-> [节点2]
+
+- 链接样式:
+  * [节点1] -[bold]-> [节点2]
+  * [节点1] -[dashed]-> [节点2]
+
+- 标签位置:
+  * left/right/up/down
+  * 示例: [A] -left-> [B]
+
+- 注释:
+  * note left of 节点: 注释
+  * note right of 节点: 注释
+  * note "注释" as N1
+  * 节点 .. N1
+
+- 参与者:
+  * actor 用户
+  * 用于表示系统外部用户
+
+设计建议：
+- 节点数量: 5-20 个
+- 工件数量: 10-40 个
+- 嵌套层级: ≤3 层
+- 连接数量: 10-30 条
+- 清晰标注协议和端口
+
+典型部署场景：
+- 单机部署: 所有组件在一个节点
+- 三层部署: Web层、应用层、数据层
+- 云原生: 容器、微服务、负载均衡
+- 混合云: 本地+云服务
+- 高可用: 主从、集群、负载均衡
+
+性能约束（Kroki）:
+- 节点 ≤40 个
+- 工件 ≤60 个
+- 嵌套 ≤3 层
+- 连接 ≤80 条
+- 复杂系统应按地域/层级/功能拆分
+
+Kroki 限制：
+- ✓ 支持所有节点类型
+- ✓ 支持嵌套结构
+- ✓ 支持通信协议标注
+- ⚠️ 节点建议 ≤30 个
+- ⚠️ 工件建议 ≤50 个
+- ⚠️ 避免过度嵌套
+
+常见错误排查：
+1. 嵌套未闭合
+   ❌ node "服务器" {
+          artifact "应用"
+      （缺少闭合括号）
+   ✓ node "服务器" {
+          artifact "应用"
+      }
+
+2. 节点名称未引号
+   ❌ node Web服务器
+   ✓ node "Web服务器"
+
+3. 工件和节点混淆
+   ❌ node "Nginx"（Nginx 是软件，应该是 artifact）
+   ✓ artifact "Nginx"
+
+4. 协议标注位置错误
+   ❌ HTTP : [A] --> [B]
+   ✓ [A] --> [B] : HTTP
+
+5. 过度嵌套
+   ❌ 5-6 层嵌套
+   ✓ ≤3 层嵌套
+"""
+
+examples = [
+  """@startuml
+cloud "阿里云" {
+    node "Web服务器" {
+        artifact "Nginx"
+        artifact "前端应用"
+    }
+
+    node "应用服务器" {
+        artifact "Spring Boot应用"
+    }
+
+    database "MySQL数据库" {
+        artifact "用户数据"
+    }
+}
+
+actor 用户
+用户 --> [Nginx] : HTTPS
+[Nginx] --> [前端应用]
+[前端应用] --> [Spring Boot应用] : REST API
+[Spring Boot应用] --> [MySQL数据库] : JDBC
+@enduml""",
+
+  """@startuml
+cloud "云服务" {
+    node "负载均衡器" <<AWS ELB>> {
+        artifact "ELB"
+    }
+
+    package "Web层" {
+        node "Web服务器1" {
+            artifact "Nginx"
+            artifact "静态资源"
+        }
+        node "Web服务器2" {
+            artifact "Nginx"
+            artifact "静态资源"
+        }
+    }
+
+    package "应用层" {
+        node "应用服务器1" {
+            artifact "Spring Boot"
+        }
+        node "应用服务器2" {
+            artifact "Spring Boot"
+        }
+    }
+
+    package "数据层" {
+        database "MySQL主库" <<Master>> {
+            artifact "用户数据"
+        }
+        database "MySQL从库" <<Slave>> {
+            artifact "用户数据副本"
+        }
+        database "Redis集群" {
+            artifact "缓存数据"
+        }
+    }
+}
+
+actor 用户
+
+用户 --> [ELB] : HTTPS
+[ELB] --> [Web服务器1]
+[ELB] --> [Web服务器2]
+
+[Web服务器1] --> [应用服务器1] : HTTP
+[Web服务器2] --> [应用服务器2] : HTTP
+
+[应用服务器1] --> [MySQL主库] : JDBC
+[应用服务器2] --> [MySQL主库] : JDBC
+
+[应用服务器1] --> [Redis集群] : 读写
+[应用服务器2] --> [Redis集群] : 读写
+
+[MySQL主库] --> [MySQL从库] : 主从复制
+
+note right of [ELB]: 负载均衡
+note right of [Redis集群]: 缓存层
+note bottom of [MySQL从库]: 只读副本
+@enduml""",
+
+  """@startuml
+node "本地机房" {
+    node "边缘节点" {
+        artifact "IoT网关"
+    }
+}
+
+cloud "混合云架构" {
+    package "公有云（AWS）" {
+        node "API网关" {
+            artifact "Kong"
+        }
+
+        node "容器集群" {
+            artifact "K8s Master"
+            artifact "Worker节点1"
+            artifact "Worker节点2"
+        }
+
+        database "RDS" {
+            artifact "PostgreSQL"
+        }
+    }
+
+    package "私有云" {
+        node "内部服务器" {
+            artifact "遗留系统"
+        }
+
+        storage "NAS存储" {
+            artifact "文件数据"
+        }
+    }
+}
+
+[IoT网关] --> [API网关] : MQTT over TLS
+[API网关] --> [K8s Master] : gRPC
+[K8s Master] --> [Worker节点1]
+[K8s Master] --> [Worker节点2]
+[Worker节点1] --> [RDS] : SQL
+[Worker节点2] --> [RDS] : SQL
+
+[API网关] ..> [遗留系统] : VPN
+[Worker节点1] --> [NAS存储] : NFS
+
+note right of [IoT网关]: 边缘计算节点
+note top of [K8s Master]: 容器编排
+note right of [遗留系统]: 通过VPN访问
+@enduml"""
+]

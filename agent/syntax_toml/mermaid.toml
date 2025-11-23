@@ -1,0 +1,1361 @@
+[meta]
+language = "mermaid"
+description = "基于文本的图表语言，支持流程图、时序图、类图等多种图表类型"
+docs_url = "https://mermaid.js.org/"
+version = "1.0.0"
+
+[types.flowchart]
+description = "流程图，展示流程和决策路径"
+use_cases = ["业务流程", "算法流程", "系统流程", "决策流程", "工作流设计"]
+
+syntax_rules = """
+核心语法：
+- 声明: flowchart TD/LR/BT/RL (方向：上下/左右/下上/右左)
+  * TD (Top Down): 从上到下，适合垂直流程
+  * LR (Left to Right): 从左到右，适合时间线/阶段展示
+  * BT (Bottom to Top): 从下到上，适合逆向追溯
+  * RL (Right to Left): 从右到左，适合特殊场景
+
+- 节点形状语法:
+  * [文本] - 矩形，表示操作/处理步骤
+  * {文本?} - 菱形，表示判断/条件分支
+  * (文本) - 圆角矩形，表示开始/结束
+  * ((文本)) - 圆形，表示连接点
+  * [/文本/] - 平行四边形，表示输入
+  * [\\文本\\] - 平行四边形（反向），表示输出
+  * [(文本)] - 圆柱形，表示数据库
+  * [[文本]] - 子程序形状
+
+- 连接箭头语法:
+  * --> 实线箭头（主流程）
+  * -.-> 虚线箭头（可选/辅助流程）
+  * ==> 粗箭头（强调/关键路径）
+  * --- 实线无箭头
+  * -.- 虚线无箭头
+  * -->|标签| 带标签的箭头
+  * A-->B-->C 链式连接多步骤
+
+- 决策节点规则:
+  * 必须使用菱形 {条件?}
+  * 必须有 ≥2 个分支
+  * 每个分支用 |标签| 标注判断结果
+  * 示例: B{是否通过?} -->|是| C[执行] -->|否| D[拒绝]
+
+- 子图嵌套:
+  * 语法: subgraph 标题 ... end
+  * 最大层级 ≤3 层（Kroki 限制）
+  * 子图内可包含节点和连接
+  * 示例:
+    subgraph 子系统A
+        A1-->A2
+    end
+
+- 保留字禁用:
+  * 禁止使用: end, subgraph, direction, graph, style, class, click
+  * 常见错误: end[结束] ❌
+  * 正确写法: finish[结束] ✓
+
+- 流程完整性检查:
+  * 所有路径必须有终点
+  * 无悬空分支
+  * 循环必须有退出条件
+
+高级语法：
+- 节点样式定义:
+  * 语法: style 节点ID fill:#颜色,stroke:#边框颜色,stroke-width:粗细px
+  * 示例: style A fill:#f9f,stroke:#333,stroke-width:2px
+  * 颜色格式: 支持 #RGB, #RRGGBB, 颜色名（red, blue）
+
+- CSS 类定义:
+  * 定义类: classDef 类名 样式属性
+  * 应用类: class 节点ID 类名
+  * 批量应用: class A,B,C 类名
+  * 示例:
+    classDef success fill:#90EE90,stroke:#333,stroke-width:2px
+    class E success
+
+- 链接样式:
+  * 语法: linkStyle 链接索引 stroke:#颜色,stroke-width:粗细px
+  * 链接索引从 0 开始，按代码顺序计数
+  * 虚线效果: linkStyle 0 stroke:#999,stroke-dasharray:5
+  * 示例: linkStyle 0 stroke:#ff3,stroke-width:4px
+
+- 注释和文档:
+  * 单行注释: %% 这是注释
+  * 注释不会在渲染图表中显示
+
+Kroki 限制：
+- ✓ 支持基础样式和类定义
+- ✓ 支持虚线和粗线连接
+- ✓ 支持子图嵌套（≤3 层）
+- ⚠️ 节点数建议 ≤100
+- ⚠️ 嵌套层级 ≤3
+- ⚠️ 避免过深的链式调用（>10 步）
+
+常见错误排查：
+1. 使用保留字作节点 ID
+   ❌ end[结束]
+   ✓ finish[结束]
+
+2. 虚线语法错误
+   ❌ ---> (三个短横线)
+   ✓ -.-> (点-短横-点-箭头)
+
+3. 样式语法错误
+   ❌ style A {fill:#f9f}
+   ✓ style A fill:#f9f,stroke:#333
+
+4. 标签引号缺失
+   ❌ -->带空格的标签|
+   ✓ -->|带空格的标签|
+
+5. 子图未闭合
+   ❌ subgraph 标题 ... (缺少 end)
+   ✓ subgraph 标题 ... end
+"""
+
+examples = [
+  """flowchart TD
+    Start([开始]) --> Input[/用户输入/]
+    Input --> Valid{验证通过?}
+    Valid -->|是| Process[处理数据]
+    Valid -->|否| Error[显示错误]
+    Process --> End([结束])
+    Error --> End""",
+
+  """flowchart LR
+    classDef success fill:#90EE90,stroke:#333,stroke-width:2px
+    classDef error fill:#FFB6C1,stroke:#333,stroke-width:2px
+
+    A[开始] --> B{检查条件}
+    B -->|通过| C[执行任务]
+    B -.->|跳过| D[记录日志]
+    C ==> E[成功完成]
+    D --> E
+
+    class E success
+    linkStyle 2 stroke:#999,stroke-width:1px,stroke-dasharray:5""",
+
+  """flowchart TD
+    subgraph 前端层
+        UI[用户界面] --> Router[路由控制]
+    end
+
+    subgraph 业务层
+        Router --> API[API接口]
+        API --> Auth[认证服务]
+        API --> Data[数据服务]
+    end
+
+    subgraph 数据层
+        Auth --> DB[(数据库)]
+        Data --> DB
+        DB --> Cache[(缓存)]
+    end
+
+    style UI fill:#e1f5ff
+    style DB fill:#ffe1e1
+    style Cache fill:#fff4e1"""
+]
+
+[types.sequence]
+description = "时序图，展示系统组件之间的交互和消息传递"
+use_cases = ["系统交互", "API调用", "消息传递", "微服务通信", "业务流程交互"]
+
+syntax_rules = """
+核心语法：
+- 声明: sequenceDiagram
+
+- 参与者类型:
+  * participant A as Alice - 矩形框（通用参与者）
+  * actor U as User - 人形图标（真人用户）
+  * 显式声明控制显示顺序（从左到右）
+  * 别名格式: participant 内部ID as 显示名称
+
+- 箭头类型详解:
+  * ->> 实线同步调用（带实心箭头）
+  * -->> 虚线异步响应/返回（带实心箭头）
+  * -> 实线同步调用（带开放箭头）
+  * --> 虚线返回（带开放箭头）
+  * -x 丢失消息（带 X 标记）
+  * -) 异步消息（带开放圆圈）
+
+- 激活框（生命线）:
+  * 显式激活: activate 参与者 ... deactivate 参与者
+  * 自动激活: ->>+ 激活，-->>- 去激活
+  * 必须成对使用，嵌套 ≤3 层
+  * 示例:
+    A->>+B: 请求
+    B-->>-A: 响应
+
+- 块语句:
+  * loop 循环条件 ... end - 循环流程
+  * alt 条件1 ... else 条件2 ... end - 条件分支
+  * opt 可选条件 ... end - 可选流程
+  * par 并发1 ... and 并发2 ... end - 并行执行
+  * 所有块必须用 end 闭合
+
+- 注释:
+  * Note left of Alice: 注释内容
+  * Note right of Alice: 注释内容
+  * Note over Alice,Bob: 跨越注释
+
+- 致命错误（Kroki）:
+  * 最后一行不能是空消息（箭头后只有冒号）
+  * ❌ A->>B:
+  * ✓ A->>B: 响应 或删除该行
+
+- 参与者名称:
+  * 大小写敏感，全文必须一致
+  * 包含空格/特殊字符的名称用引号包裹
+
+高级语法：
+- 自动编号:
+  * autonumber - 从 1 开始编号所有消息
+  * autonumber 10 - 从 10 开始编号
+  * autonumber 1 5 - 从 1 开始，步长为 5
+  * 位置: 放在参与者声明之后，第一条消息之前
+
+- 矩形框分组:
+  * 语法: rect rgb(R, G, B) ... end
+  * 或: rect rgba(R, G, B, A) ... end
+  * 用途: 将多条消息分组高亮
+  * 示例:
+    rect rgb(200, 220, 240)
+        Note over User,API: 认证流程
+        User->>API: 登录
+    end
+
+- 高级块语句:
+  * break 中断条件 ... end - 中断流程（异常/错误分支）
+  * critical 描述 ... option 备选 ... end - 关键区域
+  * 示例:
+    break 验证失败
+        API-->>User: 返回错误
+    end
+
+- 消息序号:
+  * autonumber 会自动添加序号前缀
+  * 格式: 1 消息内容
+
+Kroki 限制：
+- ✓ 完全支持 autonumber
+- ✓ 支持 rect 矩形框
+- ✓ 支持 break/critical 块
+- ⚠️ rgba 透明度可能渲染不一致
+- ⚠️ 参与者建议 ≤8 个
+- ⚠️ 消息数量建议 ≤50 条
+
+常见错误排查：
+1. autonumber 位置错误
+   ❌ autonumber
+      participant A
+   ✓ participant A
+      autonumber
+
+2. 激活框未配对
+   ❌ A->>+B: 请求（缺少去激活）
+   ✓ A->>+B: 请求
+      B-->>-A: 响应
+
+3. rect 块未闭合
+   ❌ rect rgb(200,200,200) ... (缺少 end)
+   ✓ rect rgb(200,200,200) ... end
+
+4. break 块语法错误
+   ❌ break 条件 (缺少 end)
+   ✓ break 条件描述 ... end
+
+5. 参与者名称不一致
+   ❌ participant API
+      api->>User: 响应
+   ✓ participant API
+      API->>User: 响应
+"""
+
+examples = [
+  """sequenceDiagram
+    actor User as 用户
+    participant API as 后端API
+    participant DB as 数据库
+
+    User->>+API: 登录请求
+    API->>+DB: 查询用户
+    DB-->>-API: 返回用户信息
+    alt 验证成功
+        API-->>User: 返回Token
+    else 验证失败
+        API-->>User: 返回错误
+    end
+    deactivate API""",
+
+  """sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant API as 后端API
+    participant Cache as 缓存
+    participant DB as 数据库
+
+    rect rgb(200, 220, 240)
+        Note over User,API: 认证流程
+        User->>+API: 登录请求
+        API->>+Cache: 检查Token
+        Cache-->>-API: Token不存在
+    end
+
+    API->>+DB: 验证凭据
+    break 验证失败
+        DB-->>API: 用户不存在
+        API-->>User: 返回错误
+    end
+    DB-->>-API: 验证成功
+    API->>Cache: 存储Token
+    API-->>-User: 返回Token""",
+
+  """sequenceDiagram
+    participant Client as 客户端
+    participant Gateway as API网关
+    participant Service1 as 服务1
+    participant Service2 as 服务2
+    participant MQ as 消息队列
+
+    Client->>+Gateway: HTTP请求
+
+    par 并行处理
+        Gateway->>+Service1: 调用服务1
+        Service1-->>-Gateway: 返回结果1
+    and
+        Gateway->>+Service2: 调用服务2
+        Service2-->>-Gateway: 返回结果2
+    end
+
+    Gateway->>MQ: 发送异步消息
+    Gateway-->>-Client: 返回响应
+
+    Note over MQ: 异步处理中"""
+]
+
+[types.class]
+description = "类图，展示面向对象设计中的类关系"
+use_cases = ["面向对象设计", "类关系建模", "系统架构", "UML设计", "领域建模"]
+
+syntax_rules = """
+核心语法：
+- 声明: classDiagram
+
+- 类定义:
+  * class 类名 { ... } - 标准类
+  * 类名内部定义属性和方法
+
+- 可见性修饰符:
+  * + public（公开）
+  * - private（私有）
+  * # protected（受保护）
+  * ~ package（包级别）
+
+- 属性语法:
+  * 格式: 可见性 类型 名称
+  * 示例: +String name
+
+- 方法语法:
+  * 格式: 可见性 方法名(参数类型 参数名) 返回类型
+  * 示例: +getName() String
+  * 静态方法: 方法后加 $ 标记
+  * 抽象方法: 方法后加 * 标记
+  * 示例: +getInstance()$ MyClass
+  * 示例: +calculate()* void
+
+- 关系符号:
+  * --|> 继承（实线三角箭头，子类→父类）
+  * ..|> 实现（虚线三角箭头，实现类→接口）
+  * *-- 组合（实心菱形，整体→部分，生命周期绑定）
+  * o-- 聚合（空心菱形，整体→部分，生命周期独立）
+  * --> 关联（实线箭头）
+  * ..> 依赖（虚线箭头）
+
+- 关系方向:
+  * 继承/实现: 子类→父类
+  * 组合/聚合: 整体→部分
+  * 关联/依赖: 根据语义
+
+- 泛型:
+  * 使用 ~T~ 表示（不是 <T>）
+  * 示例: List~T~
+  * 示例: Map~K,V~
+
+- 注解:
+  * <<interface>> - 接口
+  * <<abstract>> - 抽象类
+  * <<enumeration>> - 枚举
+  * 放在类名下方第一行
+
+- 多重性:
+  * 用引号包裹: "1", "*", "0..1", "1..*", "0..*"
+  * 放在关系箭头附近
+
+- 类约束:
+  * 每个类至少有一个属性或方法
+
+高级语法：
+- 枚举类:
+  * 使用 <<enumeration>> 注解
+  * 枚举值作为属性列出（无可见性修饰符）
+  * 示例:
+    class Color {
+        <<enumeration>>
+        RED
+        GREEN
+        BLUE
+    }
+
+- 构造函数:
+  * 与类名同名的方法即构造函数
+  * 无返回类型
+  * 示例: +User(String name, int age)
+
+- 抽象方法标记:
+  * 方法名后添加 * 标记
+  * 必须在抽象类或接口中
+  * 示例: +calculate()* void
+
+- 关系标签:
+  * 在关系箭头后添加冒号和标签
+  * 示例: Dog --|> Animal : extends
+  * 示例: Circle --> Color : uses
+
+- 命名空间:
+  * namespace 命名空间名 { ... }
+  * 用于分组相关类
+
+Kroki 限制：
+- ✓ 完全支持 <<enumeration>>
+- ✓ 支持构造函数标记
+- ✓ 支持抽象方法 * 标记
+- ✓ 支持泛型 ~T~ 语法
+- ⚠️ 类数量建议 ≤15 个
+- ⚠️ 避免过多继承层级（≤5 层）
+
+常见错误排查：
+1. 枚举类格式错误
+   ❌ +RED, +GREEN（枚举值不需要可见性）
+   ✓ RED
+      GREEN
+      BLUE
+
+2. 构造函数返回类型
+   ❌ +User() User（不应有返回类型）
+   ✓ +User(String name)
+
+3. 抽象标记位置错误
+   ❌ *calculate() void
+   ✓ +calculate()* void
+
+4. 泛型语法错误
+   ❌ List<T>
+   ✓ List~T~
+
+5. 关系方向错误
+   ❌ Animal --|> Dog（父类→子类错误）
+   ✓ Dog --|> Animal（子类→父类正确）
+"""
+
+examples = [
+  """classDiagram
+    class Animal {
+        <<abstract>>
+        +String name
+        +int age
+        +eat() void*
+        +sleep() void
+    }
+    class Dog {
+        +String breed
+        +bark() void
+    }
+    class Cat {
+        +boolean indoor
+        +meow() void
+    }
+    Dog --|> Animal
+    Cat --|> Animal""",
+
+  """classDiagram
+    class Color {
+        <<enumeration>>
+        RED
+        GREEN
+        BLUE
+        +toString() String
+    }
+    class Shape {
+        <<interface>>
+        +area()* double
+        +perimeter()* double
+    }
+    class Circle {
+        -double radius
+        -Color color
+        +Circle(double radius)
+        +area() double
+        +perimeter() double
+    }
+    Circle ..|> Shape : implements
+    Circle --> Color : uses""",
+
+  """classDiagram
+    class ShoppingCart {
+        -List~Item~ items
+        +addItem(Item item) void
+        +removeItem(int id) void
+        +getTotal() double
+    }
+    class Item {
+        -int id
+        -String name
+        -double price
+        +Item(String name, double price)
+        +getPrice() double
+    }
+    class Order {
+        -int orderId
+        -Date orderDate
+        -ShoppingCart cart
+        +placeOrder() boolean
+        +cancel() void
+    }
+    ShoppingCart o-- Item : contains "0..*"
+    Order *-- ShoppingCart : owns "1"
+
+    style ShoppingCart fill:#e1f5ff
+    style Order fill:#ffe1e1"""
+]
+
+[types.state]
+description = "状态图，展示系统状态和状态转换"
+use_cases = ["状态机设计", "流程状态", "生命周期管理", "业务状态流转", "工作流状态"]
+
+syntax_rules = """
+核心语法：
+- 声明: stateDiagram-v2（推荐使用 v2 版本）
+
+- 初始和结束状态:
+  * [*] --> 状态名 - 初始状态
+  * 状态名 --> [*] - 结束状态
+  * [*] 是特殊符号，表示开始/结束
+
+- 状态转换:
+  * 基本格式: 状态A --> 状态B
+  * 带条件: 状态A --> 状态B: 转换条件
+  * 条件应简洁（5-10 字），使用动词
+
+- 状态别名:
+  * 语法: state "中文显示名" as alias
+  * 用途: 处理特殊字符或空格
+  * 示例: state "待处理" as pending
+
+- 嵌套状态:
+  * 语法: state 状态名 { ... }
+  * 最大深度 ≤3 层
+  * 嵌套内可包含子状态和转换
+  * 示例:
+    state 处理中 {
+        [*] --> 验证
+        验证 --> 执行
+        执行 --> [*]
+    }
+
+- 并发状态:
+  * 使用 -- 分隔并发区域（两个短横线）
+  * 语法:
+    state 并发状态 {
+        [*] --> 任务A
+        --
+        [*] --> 任务B
+    }
+
+- 选择节点:
+  * 语法: state if_state <<choice>>
+  * 必须有 ≥2 个分支
+  * 示例:
+    state check <<choice>>
+    待处理 --> check
+    check --> 通过: 条件满足
+    check --> 拒绝: 条件不满足
+
+- 注释:
+  * 语法: note left of 状态: 说明
+  * 或: note right of 状态: 说明
+
+- 保留字禁用:
+  * 禁止使用: state, direction, note, hide, show
+  * 作为状态名时必须使用别名
+
+- 转换条件:
+  * 保持简洁: 5-10 字
+  * 使用动词: 完成、确认、取消、超时
+  * 避免完整句子
+
+高级语法：
+- 状态描述:
+  * 语法:
+    state 状态名 {
+        描述文本
+    }
+  * 用于添加状态说明
+
+- 复合状态:
+  * 包含多个子状态的状态
+  * 支持历史状态（记忆上次子状态）
+  * 语法: state 状态名 <<history>>
+
+- Fork 和 Join:
+  * state fork_state <<fork>>
+  * state join_state <<join>>
+  * 用于并发流程的分叉和合并
+
+Kroki 限制：
+- ✓ 完全支持 v2 语法
+- ✓ 支持嵌套状态（≤3 层）
+- ✓ 支持并发状态
+- ✓ 支持选择节点
+- ⚠️ 状态数量建议 ≤30 个
+- ⚠️ 避免过深嵌套
+
+常见错误排查：
+1. 版本声明错误
+   ❌ stateDiagram
+   ✓ stateDiagram-v2
+
+2. 并发分隔符错误
+   ❌ state 并发 { A --- B }（三个短横）
+   ✓ state 并发 { A -- B }（两个短横）
+
+3. 选择节点无分支
+   ❌ state check <<choice>>（没有分支）
+   ✓ state check <<choice>>
+      check --> A: 条件1
+      check --> B: 条件2
+
+4. 嵌套状态未闭合
+   ❌ state 处理中 { ... （缺少闭合括号）
+   ✓ state 处理中 { ... }
+
+5. 使用保留字作状态名
+   ❌ state --> note
+   ✓ state "state" as st
+      st --> note_state
+"""
+
+examples = [
+  """stateDiagram-v2
+    [*] --> 待处理
+    待处理 --> 处理中: 开始处理
+    处理中 --> 已完成: 完成
+    处理中 --> 失败: 错误
+    失败 --> 待处理: 重试
+    已完成 --> [*]""",
+
+  """stateDiagram-v2
+    [*] --> 草稿
+
+    state 审批流程 {
+        [*] --> 待审批
+        待审批 --> 审批中: 提交
+        审批中 --> 已批准: 批准
+        审批中 --> 已拒绝: 拒绝
+        已拒绝 --> 待审批: 修改重提
+        已批准 --> [*]
+    }
+
+    草稿 --> 审批流程: 提交审批
+    审批流程 --> 已发布: 审批通过
+    已发布 --> [*]""",
+
+  """stateDiagram-v2
+    [*] --> 接收订单
+
+    接收订单 --> 验证
+
+    state 验证 <<choice>>
+    验证 --> 处理订单: 验证通过
+    验证 --> 订单失败: 验证失败
+
+    state 处理订单 {
+        [*] --> 库存检查
+        --
+        [*] --> 支付处理
+    }
+
+    处理订单 --> 发货
+    发货 --> 完成
+    订单失败 --> [*]
+    完成 --> [*]
+
+    note right of 验证: 验证库存和支付信息"""
+]
+
+[types.er]
+description = "实体关系图，展示数据库实体和关系"
+use_cases = ["数据库设计", "实体关系建模", "数据建模", "系统数据架构", "ORM设计"]
+
+syntax_rules = """
+核心语法：
+- 声明: erDiagram
+
+- 实体命名:
+  * 推荐大写: CUSTOMER, ORDER, PRODUCT
+  * 保持一致性
+  * 使用下划线分隔: ORDER_ITEM
+
+- 属性定义:
+  * 格式: 类型 名称 约束 "注释"
+  * 示例: int id PK "主键ID"
+  * 示例: string email UK "唯一邮箱"
+
+- 数据类型:
+  * int - 整数
+  * string - 字符串
+  * varchar - 可变长字符串
+  * date - 日期
+  * datetime - 日期时间
+  * boolean - 布尔值
+  * decimal - 小数
+  * text - 文本
+
+- 约束关键字:
+  * PK - 主键（Primary Key）
+  * FK - 外键（Foreign Key）
+  * UK - 唯一键（Unique Key）
+  * NN - 非空（Not Null）
+  * 可组合: PK,NN
+
+- 关系基数:
+  * || - 有且仅有一（1）
+  * |o - 零或一（0..1）
+  * }| - 一或多（1..N）
+  * }o - 零或多（0..N）
+
+- 关系语法:
+  * 格式: 实体1 左基数关系符右基数 实体2 : "关系名"
+  * 实线: -- 强制关系
+  * 虚线: .. 可选关系
+
+- 常见关系类型:
+  * 一对一: ||--||
+  * 一对多: ||--o{
+  * 多对多: }o--o{（需要中间表）
+  * 可选一对多: ||..o{
+
+- 约束规则:
+  * 每个实体必须至少有一个 PK 主键
+  * 避免空实体定义（至少有一个属性）
+  * 外键应指向有效的主键
+
+高级语法：
+- 属性注释:
+  * 使用双引号包裹
+  * 简洁描述属性用途
+  * 示例: string name NN "用户姓名"
+
+- 复合主键:
+  * 多个属性标记为 PK
+  * 示例:
+    ENROLLMENT {
+        int student_id PK,FK
+        int course_id PK,FK
+    }
+
+- 关系标签:
+  * 使用有意义的动词
+  * 示例: places（下单）, contains（包含）, belongs to（属于）
+
+- 自引用关系:
+  * 实体指向自身
+  * 示例: EMPLOYEE ||--o{ EMPLOYEE : manages
+
+设计建议：
+- 实体数量: 5-20 个为佳
+- 属性数量: 每个实体 3-15 个属性
+- 避免冗余: 通过外键关联，不重复存储
+- 规范化: 至少达到第三范式（3NF）
+
+Kroki 限制：
+- ✓ 完全支持所有基数符号
+- ✓ 支持实线和虚线关系
+- ✓ 支持所有约束类型
+- ⚠️ 实体建议 ≤30 个
+- ⚠️ 关系建议 ≤50 条
+
+常见错误排查：
+1. 缺少主键
+   ❌ CUSTOMER {
+          string name
+      }
+   ✓ CUSTOMER {
+          int id PK
+          string name
+      }
+
+2. 基数符号错误
+   ❌ CUSTOMER |-->| ORDER
+   ✓ CUSTOMER ||--o{ ORDER
+
+3. 多对多未使用中间表
+   ❌ STUDENT }o--o{ COURSE
+   ✓ STUDENT ||--o{ ENROLLMENT : enrolls
+      COURSE ||--o{ ENROLLMENT : has
+      ENROLLMENT {
+          int student_id PK,FK
+          int course_id PK,FK
+      }
+
+4. 外键无约束标记
+   ❌ ORDER {
+          int customer_id
+      }
+   ✓ ORDER {
+          int customer_id FK
+      }
+"""
+
+examples = [
+  """erDiagram
+    CUSTOMER ||--o{ ORDER : places
+    ORDER ||--|{ ORDER_ITEM : contains
+    PRODUCT ||--o{ ORDER_ITEM : "ordered in"
+
+    CUSTOMER {
+        int id PK
+        string name
+        string email UK
+    }
+    ORDER {
+        int id PK
+        int customer_id FK
+        date order_date
+    }""",
+
+  """erDiagram
+    USER ||--o{ POST : creates
+    POST ||--o{ COMMENT : has
+    USER ||--o{ COMMENT : writes
+    POST }o--o{ TAG : tagged
+
+    USER {
+        int user_id PK
+        string username UK,NN "用户名"
+        string email UK,NN "邮箱"
+        datetime created_at NN "创建时间"
+    }
+
+    POST {
+        int post_id PK
+        int user_id FK
+        string title NN "标题"
+        text content NN "内容"
+        datetime published_at "发布时间"
+    }
+
+    COMMENT {
+        int comment_id PK
+        int post_id FK
+        int user_id FK
+        text content NN "评论内容"
+        datetime created_at NN "创建时间"
+    }
+
+    TAG {
+        int tag_id PK
+        string name UK,NN "标签名"
+    }""",
+
+  """erDiagram
+    DEPARTMENT ||--o{ EMPLOYEE : employs
+    EMPLOYEE ||--o{ EMPLOYEE : manages
+    EMPLOYEE ||--o{ PROJECT_ASSIGNMENT : assigned
+    PROJECT ||--o{ PROJECT_ASSIGNMENT : has
+
+    DEPARTMENT {
+        int dept_id PK
+        string dept_name UK,NN
+        string location
+    }
+
+    EMPLOYEE {
+        int emp_id PK
+        int dept_id FK
+        int manager_id FK
+        string name NN
+        string email UK
+        decimal salary
+    }
+
+    PROJECT {
+        int project_id PK
+        string project_name NN
+        date start_date
+        date end_date
+    }
+
+    PROJECT_ASSIGNMENT {
+        int emp_id PK,FK
+        int project_id PK,FK
+        date assigned_date NN
+        string role
+    }"""
+]
+
+[types.gantt]
+description = "甘特图，展示项目任务和时间线"
+use_cases = ["项目管理", "任务计划", "时间线规划", "里程碑管理", "资源调度"]
+
+syntax_rules = """
+核心语法：
+- 声明: gantt
+- 标题（可选）: title 项目计划
+
+- 日期格式声明:
+  * dateFormat YYYY-MM-DD（推荐 ISO 8601）
+  * 必须在任务定义之前声明
+  * 致命错误: 日期格式与 dateFormat 不一致会编译失败
+
+- 任务格式:
+  * 基本格式: 任务名称 : 开始日期, 持续时间
+  * 完整格式: 任务名称 : 状态, 任务ID, 开始日期, 持续时间
+  * 示例: 需求分析 : done, task1, 2024-01-01, 7d
+
+- 任务状态:
+  * done - 已完成
+  * active - 进行中
+  * crit - 关键任务
+  * 不写 - 未开始
+  * 可组合: done, crit
+
+- 时间单位:
+  * d - 天（如 7d）
+  * h - 小时（如 24h）
+  * m - 分钟（如 120m）
+  * w - 周（如 2w）
+  * 数字和单位间无空格
+
+- 里程碑:
+  * 关键字: milestone
+  * 持续时间必须为 0d
+  * 格式: 任务名称 : milestone, 日期, 0d
+  * 示例: 项目上线 : milestone, crit, 2024-12-31, 0d
+
+- 任务依赖:
+  * 语法: after 任务ID
+  * 单依赖: after task1
+  * 多依赖: after task1 task2 task3
+  * 依赖的任务必须先定义
+
+- 分组（section）:
+  * 语法: section 阶段名称
+  * 后续任务属于该分组
+  * 可以有多个 section
+
+- 排除日期:
+  * excludes weekends - 排除周末
+  * excludes YYYY-MM-DD - 排除特定日期
+  * 可多次使用
+
+高级语法：
+- 今日标记:
+  * todayMarker off - 关闭今日标记
+  * todayMarker stroke-width:5px - 自定义标记样式
+
+- 任务点击事件:
+  * 语法: click 任务ID href "URL"
+  * 示例: click task1 href "https://example.com"
+
+- 坐标轴格式:
+  * axisFormat %Y-%m-%d - 自定义日期显示格式
+  * axisFormat %m/%d - 简化日期格式
+
+时间计算规则：
+- 起始日期 + 持续时间 = 结束日期
+- 依赖任务在前置任务完成后开始
+- 周末和排除日期不计入工作日
+
+设计建议：
+- 任务数量: 10-30 个为佳
+- 时间跨度: 1 个月到 1 年
+- 分组: 3-7 个阶段
+- 里程碑: 5-10 个关键节点
+- 依赖链: 避免过长（≤5 层）
+
+Kroki 限制：
+- ✓ 完全支持所有任务状态
+- ✓ 支持任务依赖
+- ✓ 支持里程碑
+- ⚠️ 任务建议 ≤50 个
+- ⚠️ 时间跨度建议 ≤2 年
+
+常见错误排查：
+1. 日期格式不一致
+   ❌ dateFormat YYYY-MM-DD
+      任务 : 2024/01/01, 7d
+   ✓ dateFormat YYYY-MM-DD
+      任务 : 2024-01-01, 7d
+
+2. 里程碑持续时间非零
+   ❌ 上线 : milestone, 2024-12-31, 1d
+   ✓ 上线 : milestone, 2024-12-31, 0d
+
+3. 时间单位有空格
+   ❌ 任务 : 2024-01-01, 7 d
+   ✓ 任务 : 2024-01-01, 7d
+
+4. 依赖任务未定义
+   ❌ 任务B : after task1, 5d（task1 未定义）
+   ✓ 任务A : task1, 2024-01-01, 3d
+      任务B : after task1, 5d
+
+5. section 拼写错误
+   ❌ Section 阶段1
+   ✓ section 阶段1
+"""
+
+examples = [
+  """gantt
+    title 项目开发计划
+    dateFormat YYYY-MM-DD
+    section 前期准备
+    需求分析 : done, task1, 2024-01-01, 7d
+    系统设计 : active, task2, after task1, 5d
+    section 开发阶段
+    前端开发 : task3, after task2, 10d
+    后端开发 : task4, after task2, 10d
+    项目上线 : milestone, crit, after task3 task4, 0d""",
+
+  """gantt
+    title 产品发布时间线
+    dateFormat YYYY-MM-DD
+    excludes weekends
+
+    section 设计阶段
+    需求调研 : done, research, 2024-01-01, 5d
+    原型设计 : done, prototype, after research, 7d
+    UI设计 : active, ui_design, after prototype, 10d
+
+    section 开发阶段
+    前端开发 : crit, fe_dev, after ui_design, 15d
+    后端开发 : crit, be_dev, after prototype, 20d
+    API集成 : integration, after fe_dev be_dev, 5d
+
+    section 测试阶段
+    功能测试 : testing, after integration, 7d
+    性能测试 : perf_test, after integration, 5d
+
+    section 发布
+    预发布 : milestone, after testing perf_test, 0d
+    正式发布 : milestone, crit, after testing perf_test, 0d""",
+
+  """gantt
+    title 敏捷冲刺计划
+    dateFormat YYYY-MM-DD
+
+    section Sprint 1
+    需求拆分 : done, s1_plan, 2024-01-01, 1d
+    开发任务1 : done, s1_dev1, 2024-01-02, 4d
+    开发任务2 : done, s1_dev2, 2024-01-02, 4d
+    代码审查 : done, s1_review, after s1_dev1 s1_dev2, 1d
+    Sprint回顾 : milestone, done, after s1_review, 0d
+
+    section Sprint 2
+    需求拆分 : active, s2_plan, after s1_review, 1d
+    开发任务1 : crit, s2_dev1, after s2_plan, 5d
+    开发任务2 : s2_dev2, after s2_plan, 5d
+    代码审查 : s2_review, after s2_dev1 s2_dev2, 1d
+    Sprint回顾 : milestone, crit, after s2_review, 0d"""
+]
+
+[types.pie]
+description = "饼图，展示数据比例分布"
+use_cases = ["数据占比分析", "市场份额分布", "资源分配比例", "投票结果展示", "预算分布"]
+
+syntax_rules = """
+核心语法：
+- 声明:
+  * pie - 基础饼图
+  * pie showData - 显示具体数值的饼图
+
+- 标题（可选）:
+  * 语法: title 图表标题
+  * 示例: title 2024年市场份额分布
+
+- 数据格式:
+  * 格式: "标签" : 数值
+  * 每行一项
+  * 示例: "产品A" : 42.5
+
+- 标签规则:
+  * 必须用双引号包裹
+  * 长度 ≤15 个中文字符
+  * 不能重复
+  * 支持中文、英文、数字
+
+- 数值规则:
+  * 必须为正数
+  * 支持整数和小数
+  * 自动计算百分比
+  * 无需手动计算比例
+
+- 数据项数量:
+  * 最少 2 个
+  * 建议 3-7 个（最佳可读性）
+  * 最多 ≤10 个
+
+高级规则：
+- 比例平衡:
+  * 避免所有扇区相近（差异 <5%）
+  * 避免过大扇区（>90%）
+  * 小比例项（<5%）考虑合并为"其他"
+
+- 数据排序:
+  * 建议从大到小排序
+  * 或按业务逻辑排序
+  * 保持一致性
+
+- 颜色分配:
+  * Mermaid 自动分配颜色
+  * 默认使用主题配色
+  * 无需手动指定颜色
+
+设计建议：
+- 数据完整性: 数据总和应有实际意义
+- 标签清晰: 使用简短、明确的标签
+- 数据准确: 确保数值正确，无遗漏
+- 可读性: 避免过多小扇区（<3%）
+
+典型场景：
+- 市场份额: 各产品/公司占比
+- 资源分配: 预算、人力分布
+- 调查结果: 投票、问卷统计
+- 业务占比: 收入来源、用户分布
+
+Kroki 限制：
+- ✓ 完全支持 showData 模式
+- ✓ 自动计算百分比
+- ⚠️ 数据项建议 ≤10 个
+- ⚠️ 标签长度 ≤20 字符
+
+常见错误排查：
+1. 标签未使用引号
+   ❌ 产品A : 42.5
+   ✓ "产品A" : 42.5
+
+2. 标签重复
+   ❌ "产品A" : 30
+      "产品A" : 20
+   ✓ "产品A" : 30
+      "产品B" : 20
+
+3. 数值为负数
+   ❌ "亏损" : -10
+   ✓ "盈利" : 90
+      "其他" : 10
+
+4. 数据项过少
+   ❌ "唯一项" : 100
+   ✓ "项目A" : 60
+      "项目B" : 40
+
+5. showData 拼写错误
+   ❌ pie showdata
+   ✓ pie showData
+"""
+
+examples = [
+  """pie title 2024年市场份额分布
+    "产品A" : 42.5
+    "产品B" : 28.3
+    "产品C" : 18.7
+    "其他" : 10.5""",
+
+  """pie showData
+    title 公司预算分配
+    "研发" : 350
+    "市场" : 180
+    "运营" : 120
+    "行政" : 80
+    "其他" : 70""",
+
+  """pie title 用户设备分布
+    "Android" : 45.2
+    "iOS" : 38.7
+    "Web" : 12.3
+    "其他" : 3.8"""
+]
+
+[types.mindmap]
+description = "思维导图，展示概念层级和知识结构"
+use_cases = ["知识体系梳理", "项目规划分解", "头脑风暴整理", "学习笔记组织", "概念关系图"]
+
+syntax_rules = """
+核心语法：
+- 声明:
+  * 语法: mindmap
+  * 紧跟根节点
+
+- 根节点:
+  * 每个思维导图只有一个根节点
+  * 使用形状包裹
+  * 示例: root((项目规划))
+
+- 层级缩进:
+  * 每层级 +2 个空格（禁用 Tab）
+  * 建议最大层级 ≤4 层
+  * 同级节点空格数必须完全一致
+
+- 节点形状:
+  * ((文本)) - 圆形（通常用于根节点）
+  * (文本) - 圆角矩形
+  * [文本] - 矩形
+  * )文本( - 云形
+  * ))文本(( - 爆炸形
+  * {{文本}} - 六边形
+  * 不加形状 - 默认矩形
+
+- 节点文本:
+  * 长度 ≤20 个中文字符
+  * 使用关键词，不用完整句子
+  * 简洁明了
+
+- 图标（可选）:
+  * 语法: ::icon(fa fa-tasks)
+  * 使用 Font Awesome 图标
+  * 放在节点文本后
+
+层级结构规则：
+- 根节点: 1 个
+- 一级子节点: 3-7 个（最佳）
+- 二级子节点: 每个一级下 2-5 个
+- 避免单子节点（孤立分支）
+
+- 缩进一致性:
+  * 同级节点空格数必须完全一致
+  * ❌ 缩进混乱会导致解析失败
+  * ✓ 使用编辑器的空格可视化功能
+
+分支平衡建议：
+- 避免某分支过大（>其他分支总和）
+- 避免某分支过小（只 1 个子节点）
+- 同级节点数 ≤7 个（符合认知规律）
+- 深度和广度平衡
+
+设计原则：
+- 中心主题明确
+- 分支逻辑清晰
+- 关键词精炼
+- 层级适中（3-4 层）
+- 视觉平衡
+
+典型应用场景：
+- 知识体系: 学科知识、技术栈
+- 项目规划: 任务分解、里程碑
+- 头脑风暴: 创意收集、方案对比
+- 会议笔记: 要点梳理、行动项
+- 学习笔记: 章节总结、概念关系
+
+Kroki 限制：
+- ✓ 支持所有节点形状
+- ✓ 支持图标（Font Awesome）
+- ⚠️ 总节点建议 ≤50 个
+- ⚠️ 层级建议 ≤5 层
+- ⚠️ 节点文本 ≤30 字符
+
+常见错误排查：
+1. 缩进不一致
+   ❌ mindmap
+        root((中心))
+          节点A
+           节点B
+   ✓ mindmap
+        root((中心))
+          节点A
+          节点B
+
+2. 使用 Tab 缩进
+   ❌ 使用 Tab 键缩进
+   ✓ 使用 2 个空格缩进
+
+3. 根节点多个
+   ❌ mindmap
+        root1((中心1))
+        root2((中心2))
+   ✓ mindmap
+        root((中心))
+          分支1
+          分支2
+
+4. 节点形状不匹配
+   ❌ (文本))（左右括号不匹配）
+   ✓ (文本)
+
+5. 层级过深
+   ❌ 6-7 层嵌套
+   ✓ 3-4 层嵌套
+"""
+
+examples = [
+  """mindmap
+  root((项目规划))
+    需求分析
+      用户调研
+      竞品分析
+      功能清单
+    系统设计
+      架构设计
+      数据库设计
+      接口设计
+    开发实施
+      前端开发
+      后端开发
+      测试验证""",
+
+  """mindmap
+  root((Web开发技术))
+    前端技术
+      框架
+        React
+        Vue
+        Angular
+      工具
+        Webpack
+        Vite
+    后端技术
+      语言
+        Node.js
+        Python
+        Java
+      框架
+        Express
+        Django
+        Spring
+    数据库
+      关系型
+        MySQL
+        PostgreSQL
+      非关系型
+        MongoDB
+        Redis""",
+
+  """mindmap
+  root((产品发布计划))
+    )阶段1(
+      需求确认
+      原型设计
+    )阶段2(
+      UI设计
+      技术评审
+    )阶段3(
+      前端开发
+      后端开发
+      测试
+    )阶段4(
+      上线准备
+      正式发布
+      监控反馈"""
+]

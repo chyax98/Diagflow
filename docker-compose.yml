@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # 前端服务 (Next.js)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      # Next.js API Route 转发到后端（内网）
+      - AGENT_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ============================================
+  # 后端服务 (FastAPI) - 不对外暴露端口
+  # ============================================
+  backend:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    # 注意：移除 ports 映射，后端只在内网运行
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.moonshot.cn/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-kimi-k2-thinking}
+      # Kroki 渲染服务（默认公网，可改为私网 Kroki）
+      - KROKI_BASE_URL=${KROKI_BASE_URL:-https://kroki.io}
+      - PORT=8000
+      # Logfire 监控（可选）
+      - LOGFIRE_TOKEN=${LOGFIRE_TOKEN:-}
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# ============================================
+# 网络配置
+# ============================================
+networks:
+  app-network:
+    driver: bridge

@@ -1,0 +1,541 @@
+[meta]
+language = "c4plantuml"
+description = "基于PlantUML的C4模型架构图语言，用于软件架构可视化"
+docs_url = "https://github.com/plantuml-stdlib/C4-PlantUML"
+version = "1.0.0"
+
+[types.context]
+description = "C4模型Level 1 - 系统上下文图，展示系统与外部实体的交互关系"
+use_cases = ["系统边界", "外部依赖", "用户角色", "系统全景", "利益相关者视图"]
+
+syntax_rules = """
+核心语法要点：
+- 强制包裹: @startuml 和 @enduml（缺少会渲染失败）
+- 强制库引用(最致命错误): !include <C4/C4_Context>，不能为空或错误
+  * 也可使用在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+元素定义：
+- 人员: Person(alias, "名称", "描述", ?sprite, ?tags, ?link)
+- 外部人员: Person_Ext(alias, "外部人员", "描述", ?sprite, ?tags, ?link)
+- 系统: System(alias, "名称", "描述", ?sprite, ?tags, ?link, ?type)
+- 外部系统: System_Ext(alias, "外部系统", "描述", ?sprite, ?tags, ?link, ?type)
+- 数据库系统: SystemDb(alias, "数据库名", "描述", ?sprite, ?tags, ?link)
+- 消息队列系统: SystemQueue(alias, "队列名", "描述", ?sprite, ?tags, ?link)
+
+关系定义：
+- 基础关系: Rel(from, to, "描述", ?技术)
+- 反向关系: Rel_Back(from, to, "描述", ?技术)
+- 方向关系: Rel_U/Rel_D/Rel_L/Rel_R (上/下/左/右)
+- 双向关系: BiRel(from, to, "描述", ?技术)
+
+边界定义：
+- 系统边界: System_Boundary(alias, "名称") { ... }
+- 企业边界: Enterprise_Boundary(alias, "名称") { ... }
+- 通用边界: Boundary(alias, "名称", ?type) { ... }
+
+布局选项：
+- 自动布局+图例: LAYOUT_WITH_LEGEND()
+- 方向布局: LAYOUT_TOP_DOWN() / LAYOUT_LEFT_RIGHT()
+- 显示图例: SHOW_LEGEND()
+- 手绘风格: SHOW_SKETCH_STYLE(?show)
+
+高级特性：
+- 标签系统: $tags="tag1+tag2" 用于元素分类
+- 自定义标签: AddElementTag(tagStereo, ?bgColor, ?fontColor, ?borderColor)
+- 添加链接: $link="https://example.com"
+- 添加图标: $sprite="{SpriteName}" 或 img:{File/Url} 或 &{OpenIconic}
+
+最佳实践：
+- 粒度控制: 3-10个系统，过多应拆分为多个图
+- 特殊字符: 描述中的[]{}()必须用双引号包裹
+- 命名规范: alias使用驼峰命名或下划线，避免空格
+- 技术标注: 使用第四个参数明确技术栈，如"HTTPS", "REST API"
+
+常见错误：
+- 缺少@startuml/@enduml包裹
+- !include路径错误或缺失
+- alias重复定义
+- 关系中的from/to引用不存在的alias
+"""
+
+examples = [
+  """@startuml
+!include <C4/C4_Context>
+
+title 电商系统上下文图
+
+Person(customer, "客户", "使用系统的最终用户")
+Person(admin, "管理员", "系统管理员")
+
+System(ecommerce, "电商平台", "在线购物核心系统")
+System_Ext(payment, "支付宝", "第三方支付平台")
+System_Ext(logistics, "物流系统", "第三方配送服务")
+SystemDb_Ext(erp, "ERP系统", "企业资源管理")
+
+Rel(customer, ecommerce, "浏览商品、下单", "HTTPS")
+Rel(admin, ecommerce, "管理商品、订单", "HTTPS")
+Rel(ecommerce, payment, "处理支付", "REST API/JSON")
+Rel(ecommerce, logistics, "创建配送单", "HTTPS")
+Rel(ecommerce, erp, "同步库存", "SOAP/XML")
+
+LAYOUT_WITH_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Context>
+
+title 企业信息系统全景图
+
+Enterprise_Boundary(enterprise, "企业边界") {
+  Person(employee, "员工", "公司内部员工")
+
+  System_Boundary(internal, "内部系统") {
+    System(hr, "HR系统", "人力资源管理")
+    System(finance, "财务系统", "财务核算")
+    System(crm, "CRM系统", "客户关系管理")
+  }
+}
+
+Person_Ext(customer, "外部客户", "购买产品的客户")
+System_Ext(bank, "银行系统", "在线支付")
+System_Ext(email, "邮件服务", "邮件推送", $sprite="mail")
+
+Rel(employee, hr, "查询考勤、薪资")
+Rel(employee, finance, "报销审批")
+Rel(employee, crm, "管理客户")
+Rel(customer, crm, "提交需求", "Web Portal")
+Rel(finance, bank, "付款对账", "银联接口")
+Rel(crm, email, "发送通知", "SMTP")
+
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Context>
+!include <awslib/AWSCommon>
+!include <awslib/Storage/SimpleStorageServiceS3.puml>
+
+title IoT平台系统上下文（带图标和标签）
+
+AddElementTag("v1.0", $bgColor="#d4f1d4")
+AddElementTag("legacy", $bgColor="#f1d4d4")
+AddRelTag("async", $lineStyle="DashedLine()", $textColor="#ff6655")
+
+Person(user, "设备用户", "操作IoT设备")
+Person(ops, "运维人员", "监控系统健康")
+
+System(iot_platform, "IoT平台", "设备管理和数据采集", $tags="v1.0")
+System(device, "智能设备", "物联网终端", $sprite="robot", $tags="v1.0")
+System_Ext(old_system, "遗留系统", "旧版监控平台", $tags="legacy")
+SystemDb(timeseries, "时序数据库", "InfluxDB存储设备数据", $sprite="database")
+SystemQueue(mq, "消息队列", "Kafka消息总线", $tags="v1.0")
+
+Rel(user, device, "控制设备", "移动APP")
+Rel(device, iot_platform, "上报数据", "MQTT", $tags="async")
+Rel(iot_platform, timeseries, "存储时序数据", "HTTP API")
+Rel(iot_platform, mq, "发布事件", "Kafka Protocol", $tags="async")
+Rel(iot_platform, old_system, "数据同步", "REST API")
+Rel(ops, iot_platform, "监控告警", "Web Console")
+
+SHOW_LEGEND()
+@enduml"""
+]
+
+[types.container]
+description = "C4模型Level 2 - 容器图，展示系统内部的技术构成和容器划分"
+use_cases = ["系统架构", "技术栈", "服务划分", "数据存储", "部署单元"]
+
+syntax_rules = """
+核心语法要点：
+- 强制包裹: @startuml 和 @enduml
+- 强制库引用: !include <C4/C4_Container>
+  * 在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+  * 注意: Container库继承Context，可定义Person和System
+
+容器元素定义：
+- 通用容器: Container(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link)
+- 数据库容器: ContainerDb(alias, "数据库名", "数据库类型", "描述", ?sprite, ?tags, ?link)
+- 消息队列容器: ContainerQueue(alias, "队列名", "队列技术", "描述", ?sprite, ?tags, ?link)
+- 外部容器: Container_Ext(alias, "外部服务", "技术", "描述", ?sprite, ?tags, ?link)
+- 外部数据库: ContainerDb_Ext(alias, "外部DB", "类型", "描述", ?sprite, ?tags, ?link)
+- 外部队列: ContainerQueue_Ext(alias, "外部MQ", "技术", "描述", ?sprite, ?tags, ?link)
+
+容器边界：
+- Container_Boundary(alias, "名称") { ... }
+- 可嵌套多个Container定义
+- 边界用于模块划分
+
+技术栈标注：
+- 第三个参数必须包含技术栈信息
+- 示例: "Spring Boot", "React 18", "PostgreSQL 14", "Redis 6.2"
+- 技术栈会在容器内显示为 [技术栈] 格式
+
+关系定义（继承Context）：
+- Rel(from, to, "描述", "技术/协议")
+- 常见协议: "REST/JSON", "gRPC", "GraphQL", "JDBC", "AMQP", "WebSocket"
+- 异步消息: 使用Rel_Back表示回调或消息响应
+
+布局和样式：
+- LAYOUT_WITH_LEGEND() - 自动布局+图例
+- LAYOUT_LANDSCAPE() - 横向布局（适合宽屏）
+- HIDE_STEREOTYPE() - 隐藏<<container>>标签
+- SetDefaultLegendEntries("人员\\n系统\\n容器") - 自定义图例
+
+高级特性：
+- 容器组: ContainerBoundary 可嵌套多层
+- 技术债标记: 使用$tags标记"legacy"或"deprecated"
+- 性能关键路径: 使用AddRelTag()定义特殊关系样式
+- 数据流方向: 使用Rel_U/D/L/R明确数据流向
+
+最佳实践：
+- 粒度控制: 5-15个容器，避免过度复杂
+- 技术栈一致性: 统一技术栈命名格式（含版本号）
+- 分层清晰: 前端/后端/数据层分离
+- 职责单一: 每个容器职责明确
+
+常见模式：
+- 三层架构: Web容器 -> API容器 -> 数据库容器
+- 微服务: 多个独立容器 + 消息队列 + 服务网格
+- 前后端分离: SPA容器 + API Gateway容器 + 多个微服务容器
+"""
+
+examples = [
+  """@startuml
+!include <C4/C4_Container>
+
+title 电商系统容器架构
+
+Person(customer, "客户")
+Person(admin, "管理员")
+
+System_Boundary(ecommerce, "电商系统") {
+  Container(webapp, "Web应用", "React 18", "用户界面")
+  Container(mobile, "移动APP", "Flutter 3.0", "iOS/Android客户端")
+  Container(api, "API网关", "Spring Cloud Gateway", "统一入口、路由和认证")
+
+  Container_Boundary(services, "业务服务层") {
+    Container(user_svc, "用户服务", "Spring Boot 3.0", "用户管理")
+    Container(product_svc, "商品服务", "Spring Boot 3.0", "商品管理")
+    Container(order_svc, "订单服务", "Spring Boot 3.0", "订单处理")
+  }
+
+  ContainerDb(user_db, "用户数据库", "PostgreSQL 14", "用户数据")
+  ContainerDb(product_db, "商品数据库", "MySQL 8.0", "商品库存")
+  ContainerDb(order_db, "订单数据库", "MySQL 8.0", "订单数据")
+  ContainerQueue(mq, "消息队列", "RabbitMQ 3.11", "异步消息")
+  Container(cache, "缓存层", "Redis 7.0", "会话和热点数据")
+}
+
+System_Ext(payment, "支付网关", "第三方支付")
+
+Rel(customer, webapp, "访问", "HTTPS")
+Rel(customer, mobile, "使用", "HTTP/2")
+Rel(webapp, api, "调用API", "REST/JSON")
+Rel(mobile, api, "调用API", "REST/JSON")
+
+Rel(api, user_svc, "转发", "HTTP")
+Rel(api, product_svc, "转发", "HTTP")
+Rel(api, order_svc, "转发", "HTTP")
+
+Rel(user_svc, user_db, "读写", "JDBC")
+Rel(product_svc, product_db, "读写", "JDBC")
+Rel(order_svc, order_db, "读写", "JDBC")
+
+Rel(order_svc, mq, "发送订单事件", "AMQP")
+Rel(user_svc, cache, "缓存用户", "Redis Protocol")
+Rel(order_svc, payment, "支付请求", "REST API")
+
+Rel(admin, webapp, "管理后台", "HTTPS")
+
+LAYOUT_WITH_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Container>
+
+title 微服务架构容器图
+
+Person(user, "用户")
+
+System_Boundary(platform, "微服务平台") {
+  Container(web, "Web门户", "Next.js 13", "服务端渲染")
+  Container(bff, "BFF层", "Node.js 18 + Express", "前端专用API")
+  Container(gateway, "API网关", "Kong 3.0", "流量入口")
+
+  Container_Boundary(microservices, "微服务集群") {
+    Container(auth, "认证服务", "Go 1.20", "JWT鉴权")
+    Container(user_ms, "用户服务", "Java 17 + Spring Boot", "用户CRUD")
+    Container(notify, "通知服务", "Python 3.11 + FastAPI", "邮件/短信")
+  }
+
+  ContainerDb(pg, "主数据库", "PostgreSQL 15", "业务数据")
+  ContainerQueue(kafka, "事件总线", "Kafka 3.3", "领域事件")
+  Container(redis, "分布式缓存", "Redis Cluster 7.0", "缓存和会话")
+  Container(es, "搜索引擎", "Elasticsearch 8.0", "全文检索")
+}
+
+Rel(user, web, "访问")
+Rel(web, bff, "调用", "GraphQL")
+Rel(bff, gateway, "路由", "HTTP/2")
+Rel(gateway, auth, "认证", "gRPC")
+Rel(gateway, user_ms, "用户操作", "REST")
+Rel(gateway, notify, "发送通知", "REST")
+
+Rel(auth, redis, "存储Token", "Redis Protocol")
+Rel(user_ms, pg, "读写", "JDBC")
+Rel(user_ms, kafka, "发布事件", "Kafka Protocol")
+Rel(notify, kafka, "订阅事件", "Kafka Protocol")
+Rel(user_ms, es, "索引用户", "HTTP API")
+
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Container>
+
+title Serverless架构容器图
+
+AddContainerTag("lambda", $sprite="lambda", $legendText="Lambda函数")
+AddContainerTag("managed", $bgColor="#e1f5e1", $legendText="托管服务")
+
+Person(user, "用户")
+
+System_Boundary(serverless, "Serverless应用") {
+  Container(cdn, "CDN", "CloudFront", "静态资源分发", $tags="managed")
+  Container(spa, "单页应用", "Vue 3 + Vite", "静态前端")
+  Container(apigw, "API网关", "AWS API Gateway", "HTTP路由", $tags="managed")
+
+  Container(auth_fn, "认证函数", "Node.js 18 Lambda", "用户认证", $tags="lambda")
+  Container(api_fn, "API函数", "Python 3.11 Lambda", "业务逻辑", $tags="lambda")
+  Container(event_fn, "事件处理", "Go 1.20 Lambda", "异步任务", $tags="lambda")
+
+  ContainerDb(dynamo, "NoSQL数据库", "DynamoDB", "用户和业务数据", $tags="managed")
+  ContainerDb(s3, "对象存储", "S3", "文件存储", $tags="managed")
+  ContainerQueue(sqs, "消息队列", "SQS", "异步消息", $tags="managed")
+}
+
+Rel(user, cdn, "访问")
+Rel(cdn, spa, "分发")
+Rel(spa, apigw, "调用", "HTTPS")
+Rel(apigw, auth_fn, "鉴权", "Lambda触发")
+Rel(apigw, api_fn, "业务处理", "Lambda触发")
+Rel(api_fn, dynamo, "读写", "AWS SDK")
+Rel(api_fn, s3, "上传文件", "AWS SDK")
+Rel(api_fn, sqs, "发送消息", "AWS SDK")
+Rel(sqs, event_fn, "触发", "事件驱动")
+Rel(event_fn, dynamo, "更新状态", "AWS SDK")
+
+SHOW_LEGEND()
+@enduml"""
+]
+
+[types.component]
+description = "C4模型Level 3 - 组件图，展示容器内部的组件划分和职责分配"
+use_cases = ["模块划分", "职责分离", "组件依赖", "接口设计", "代码组织"]
+
+syntax_rules = """
+核心语法要点：
+- 强制包裹: @startuml 和 @enduml
+- 强制库引用: !include <C4/C4_Component>
+  * 在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+  * 注意: Component库继承Container和Context
+
+组件元素定义：
+- 通用组件: Component(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link)
+- 数据库组件: ComponentDb(alias, "数据库", "类型", "描述", ?sprite, ?tags, ?link)
+- 队列组件: ComponentQueue(alias, "队列", "技术", "描述", ?sprite, ?tags, ?link)
+- 外部组件: Component_Ext(alias, "外部组件", "技术", "描述", ?sprite, ?tags, ?link)
+
+组件边界：
+- Component_Boundary(alias, "组件组名") { ... }
+- 用于逻辑分组（如Controller层、Service层、Repository层）
+- 可嵌套多层边界
+
+组件粒度：
+- 粒度: 5-20个组件，保持可读性
+- 层次: 通常3-4层（Controller/Service/Repository/Infrastructure）
+- 职责: 每个组件单一职责原则（SRP）
+
+典型分层模式：
+1. 表示层: Controller组件（处理HTTP请求）
+2. 业务层: Service组件（业务逻辑）
+3. 数据层: Repository组件（数据访问）
+4. 基础设施: Utility组件（工具类）
+
+关系定义：
+- 组件间依赖: Rel(from, to, "调用", "方法调用/接口")
+- 常见模式: "方法调用", "依赖注入", "事件发布", "接口实现"
+- 数据流: 使用Rel_U/D/L/R明确调用方向
+
+技术栈标注：
+- 第三个参数指定技术或框架
+- 示例: "Spring MVC", "Spring Data JPA", "MyBatis", "Hibernate"
+- 模式: "Repository Pattern", "Factory Pattern", "Singleton"
+
+布局建议：
+- LAYOUT_TOP_DOWN() - 适合分层架构
+- LAYOUT_LEFT_RIGHT() - 适合管道/过滤器模式
+- 使用Lay_Distance()调整间距
+
+最佳实践：
+- 层次一致: 不混用Context/Container元素
+- 依赖方向: 自上而下，避免循环依赖
+- 接口隔离: 组件间通过接口交互
+- 命名规范: 组件名反映职责（如UserController, UserService）
+
+常见架构模式：
+- 三层架构: Controller -> Service -> Repository
+- 六边形架构: Application -> Domain <- Infrastructure
+- CQRS: Command Handler <-> Query Handler
+- 事件驱动: Event Publisher -> Event Bus -> Event Handler
+
+常见错误：
+- 组件粒度过细（类级别）或过粗（模块级别）
+- 循环依赖（A->B->A）
+- 跨层调用（Controller直接调Repository）
+- 职责不清（一个组件做多件事）
+"""
+
+examples = [
+  """@startuml
+!include <C4/C4_Component>
+
+title 订单服务组件架构
+
+Container_Boundary(order_service, "订单服务") {
+  Component_Boundary(api_layer, "API层") {
+    Component(order_ctrl, "订单控制器", "Spring MVC", "REST API端点")
+    Component(payment_ctrl, "支付控制器", "Spring MVC", "支付接口")
+  }
+
+  Component_Boundary(business_layer, "业务层") {
+    Component(order_svc, "订单业务", "Spring Service", "订单处理逻辑")
+    Component(payment_svc, "支付业务", "Spring Service", "支付流程")
+    Component(inventory_svc, "库存业务", "Spring Service", "库存扣减")
+  }
+
+  Component_Boundary(data_layer, "数据层") {
+    Component(order_repo, "订单仓储", "Spring Data JPA", "订单CRUD")
+    Component(payment_repo, "支付仓储", "Spring Data JPA", "支付记录")
+    ComponentDb(order_db, "订单数据库", "MySQL 8.0", "持久化存储")
+  }
+
+  Component_Boundary(infra_layer, "基础设施") {
+    Component(event_pub, "事件发布器", "Spring Event", "领域事件")
+    Component(cache_mgr, "缓存管理", "Spring Cache", "缓存抽象")
+  }
+}
+
+Component_Ext(mq, "消息队列", "RabbitMQ", "异步消息")
+
+Rel(order_ctrl, order_svc, "调用", "方法调用")
+Rel(payment_ctrl, payment_svc, "调用", "方法调用")
+
+Rel(order_svc, order_repo, "使用", "JPA接口")
+Rel(payment_svc, payment_repo, "使用", "JPA接口")
+Rel(order_svc, inventory_svc, "扣减库存", "方法调用")
+Rel(order_svc, event_pub, "发布事件", "Spring Event")
+
+Rel(order_repo, order_db, "读写", "JDBC")
+Rel(payment_repo, order_db, "读写", "JDBC")
+
+Rel(order_svc, cache_mgr, "缓存", "@Cacheable")
+Rel(event_pub, mq, "发送消息", "AMQP")
+
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Component>
+
+title 六边形架构（端口适配器）组件图
+
+Container_Boundary(hexagonal, "用户服务（六边形架构）") {
+  Component_Boundary(application, "应用层") {
+    Component(create_user_cmd, "创建用户命令", "Use Case", "用户注册")
+    Component(get_user_qry, "查询用户", "Use Case", "用户查询")
+  }
+
+  Component_Boundary(domain, "领域层") {
+    Component(user_entity, "用户实体", "Domain Model", "用户聚合根")
+    Component(user_repo_port, "用户仓储端口", "Interface", "仓储抽象")
+    Component(email_port, "邮件端口", "Interface", "邮件抽象")
+  }
+
+  Component_Boundary(adapters_in, "入站适配器") {
+    Component(rest_adapter, "REST适配器", "Spring MVC", "HTTP入口")
+    Component(grpc_adapter, "gRPC适配器", "gRPC", "RPC入口")
+  }
+
+  Component_Boundary(adapters_out, "出站适配器") {
+    Component(jpa_adapter, "JPA适配器", "Spring Data JPA", "数据库实现")
+    Component(smtp_adapter, "SMTP适配器", "JavaMail", "邮件实现")
+  }
+}
+
+ComponentDb(pg, "PostgreSQL", "关系数据库")
+Component_Ext(smtp_server, "SMTP服务器", "邮件服务")
+
+Rel(rest_adapter, create_user_cmd, "调用")
+Rel(grpc_adapter, get_user_qry, "调用")
+
+Rel(create_user_cmd, user_entity, "操作")
+Rel(get_user_qry, user_entity, "查询")
+
+Rel(create_user_cmd, user_repo_port, "使用端口")
+Rel(create_user_cmd, email_port, "使用端口")
+Rel(get_user_qry, user_repo_port, "使用端口")
+
+Rel(jpa_adapter, user_repo_port, "实现", "Adapter")
+Rel(smtp_adapter, email_port, "实现", "Adapter")
+
+Rel(jpa_adapter, pg, "持久化", "JDBC")
+Rel(smtp_adapter, smtp_server, "发送", "SMTP")
+
+LAYOUT_LEFT_RIGHT()
+SHOW_LEGEND()
+@enduml""",
+
+  """@startuml
+!include <C4/C4_Component>
+
+title CQRS模式组件架构
+
+Container_Boundary(cqrs_service, "CQRS服务") {
+  Component_Boundary(command_side, "命令端（写）") {
+    Component(cmd_handler, "命令处理器", "Handler", "处理写操作")
+    Component(aggregate, "聚合根", "Domain Model", "业务逻辑")
+    Component(event_store, "事件存储", "Event Sourcing", "事件持久化")
+    ComponentDb(write_db, "写库", "PostgreSQL", "事件日志")
+  }
+
+  Component_Boundary(query_side, "查询端（读）") {
+    Component(qry_handler, "查询处理器", "Handler", "处理读操作")
+    Component(read_model, "读模型", "Projection", "查询优化模型")
+    ComponentDb(read_db, "读库", "MongoDB", "非规范化数据")
+  }
+
+  Component_Boundary(sync, "同步机制") {
+    Component(event_bus, "事件总线", "In-Memory Bus", "事件分发")
+    Component(projector, "投影器", "Event Handler", "更新读模型")
+  }
+}
+
+Rel(cmd_handler, aggregate, "执行命令", "方法调用")
+Rel(aggregate, event_store, "保存事件", "Append")
+Rel(event_store, write_db, "持久化", "JDBC")
+
+Rel(event_store, event_bus, "发布事件", "事件驱动")
+Rel(event_bus, projector, "分发事件", "订阅")
+Rel(projector, read_model, "更新投影", "更新")
+Rel(read_model, read_db, "保存", "MongoDB Driver")
+
+Rel(qry_handler, read_model, "查询", "方法调用")
+
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
+@enduml"""
+]
