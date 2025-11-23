@@ -58,6 +58,7 @@ model = OpenAIChatModel(
 )
 
 agent = Agent[StateDeps[DiagramState], str](
+    name="my_agent",  # 明确设置 Agent 名称，匹配前端 layout.tsx 中的配置
     model=model,
     deps_type=StateDeps[DiagramState],
     system_prompt=dedent("""
