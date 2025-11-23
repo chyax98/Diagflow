@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useCoAgent, useCopilotAction, CatchAllActionRenderProps } from "@copilotkit/react-core";
-import { CopilotSidebar } from "@copilotkit/react-ui";
+import { useCoAgent, useCopilotAction, useCopilotChat, CatchAllActionRenderProps } from "@copilotkit/react-core";
+import { CopilotSidebar, HeaderProps, useChatContext } from "@copilotkit/react-ui";
 import { toast } from "sonner";
 import { AgentState } from "@/lib/types";
 import { CodeEditor } from "@/components/code-editor";
@@ -72,6 +72,50 @@ LAYOUT_WITH_LEGEND()
   }
 }`,
 };
+
+// 自定义 Header 组件，包含清空对话按钮
+function CustomHeader({}: HeaderProps) {
+  const { setOpen, icons, labels } = useChatContext();
+  const { setMessages } = useCopilotChat();
+
+  const handleClearChat = () => {
+    // 直接清空所有消息，让 CopilotKit 自动显示初始欢迎语
+    setMessages([]);
+
+    toast("对话已重置", {
+      duration: 2000,
+      style: {
+        background: "#f0fdf4",
+        border: "1px solid #86efac",
+        color: "#166534",
+        fontSize: "14px",
+        padding: "12px 16px",
+      },
+    });
+  };
+
+  return (
+    <div className="flex justify-between items-center p-4 border-b border-gray-200">
+      <div className="text-lg font-semibold">{labels.title}</div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleClearChat}
+          className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+          title="清空对话"
+        >
+          清空
+        </button>
+        <button
+          onClick={() => setOpen(false)}
+          className="text-gray-500 hover:text-gray-700 transition-colors"
+          aria-label="关闭"
+        >
+          {icons.headerCloseIcon}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const themeColor = "#6366f1";
@@ -366,6 +410,7 @@ export default function Home() {
       <CopilotSidebar
         defaultOpen={true}
         clickOutsideToClose={false}
+        Header={CustomHeader}
         labels={{
           title: "Kroki Agent",
           initial: "我可以帮你生成各种图表！点击下面的案例快速开始，或直接描述你想要的图表。",

@@ -37,3 +37,13 @@ body,
 html {
   height: 100%;
 }
+
+/* 隐藏 CopilotKit 的点赞/点踩按钮 */
+[class*="ResponseButton"],
+[class*="FeedbackButton"],
+button[aria-label*="thumbs"],
+button[aria-label*="feedback"],
+.copilotKitMessage button[title*="👍"],
+.copilotKitMessage button[title*="👎"] {
+  display: none !important;
+}
