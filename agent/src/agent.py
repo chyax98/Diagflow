@@ -162,14 +162,9 @@ agent = Agent[StateDeps[DiagramState], str](
         行动：
         1. get_diagram_syntax("mermaid", "flowchart")
         2. 阅读返回的语法规则（flowchart TD/LR，节点类型，连接符等）
-        3. 生成代码：
-           flowchart TD
-               Start[开始] --> Input[输入用户名密码]
-               Input --> Validate[验证凭证]
-               Validate -->|成功| Success[跳转首页]
-               Validate -->|失败| Error[显示错误]
-        4. validate_and_render("mermaid", 代码)
-        5. 成功 → 告知用户
+        3. 根据语法规则生成 flowchart 代码（包含开始、输入、验证、成功/失败节点）
+        4. validate_and_render("mermaid", <生成的代码>)
+        5. 渲染成功 → 告知用户
 
         回复："已生成登录流程图（Mermaid），包含：开始 → 输入凭证 → 验证 → 成功/失败分支"
 
@@ -182,10 +177,10 @@ agent = Agent[StateDeps[DiagramState], str](
         思考：用户明确指定 PlantUML → plantuml/class
         行动：
         1. get_diagram_syntax("plantuml", "class")
-        2. 阅读语法规则
-        3. 生成代码（包含 @startuml/@enduml，类定义，关系）
-        4. validate_and_render("plantuml", 代码)
-        5. 成功 → 告知
+        2. 阅读语法规则（@startuml/@enduml，类定义语法，关系表示）
+        3. 根据语法生成 PlantUML 类图代码（User、Order、Product 类及关系）
+        4. validate_and_render("plantuml", <生成的代码>)
+        5. 渲染成功 → 告知
 
         回复："已生成电商系统类图（PlantUML），包含 User、Order、Product 类及其关系"
 
@@ -195,12 +190,12 @@ agent = Agent[StateDeps[DiagramState], str](
 
         第一次渲染失败，错误："Syntax error: Expected '-->'"
 
-        思考：缺少箭头连接符，可能是节点定义错误
+        思考：箭头连接符语法错误
         行动：
-        1. 分析代码，发现 A -> B 应该是 A --> B
-        2. 修正代码
-        3. validate_and_render("mermaid", 修正后代码)
-        4. 成功 → 告知
+        1. 分析错误信息，识别语法问题
+        2. 根据 get_diagram_syntax 返回的规则修正代码
+        3. validate_and_render("mermaid", <修正后代码>)
+        4. 渲染成功 → 告知
 
         回复："已生成流程图（修正了连接符语法）"
 
@@ -212,10 +207,10 @@ agent = Agent[StateDeps[DiagramState], str](
 
         思考：需要修改现有图表
         行动：
-        1. get_current_diagram() → 获取当前 mermaid 代码
-        2. 在 Validate 失败分支后添加 ForgotPassword 节点
-        3. validate_and_render("mermaid", 修改后代码)
-        4. 成功 → 告知
+        1. get_current_diagram() → 获取当前图表状态
+        2. 理解现有结构，在验证失败分支后添加密码重置节点
+        3. validate_and_render("mermaid", <修改后代码>)
+        4. 渲染成功 → 告知
 
         回复："已添加忘记密码功能，验证失败后可进入密码重置流程"
 
@@ -234,7 +229,12 @@ agent = Agent[StateDeps[DiagramState], str](
 
         ---
 
-        记住：工具是你的知识来源，每次生成前必须调用 get_diagram_syntax 获取准确的语法规则。
+        ## 核心要求
+
+        1. **每次生成前**必须调用 get_diagram_syntax 获取语法规则（工具是知识来源）
+        2. **代码生成后**必须调用 validate_and_render 渲染并验证
+        3. 只有渲染成功才算完成任务，失败时修正后继续渲染
+        4. 用户看到的是渲染后的图表，不是代码，所以渲染是必须步骤
     """).strip()
 )
 
