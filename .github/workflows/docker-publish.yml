@@ -27,10 +27,10 @@ env:
   REGISTRY: ghcr.io
   # 如果使用 Docker Hub，改为：docker.io/your-username
 
-# 并发控制：同一时间只运行一次镜像发布
+# 并发控制：新推送取消旧构建
 concurrency:
   group: docker-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-and-push:
@@ -82,7 +82,8 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          # 仅支持 amd64 平台（arm64 构建慢 2-3 倍）
+          platforms: linux/amd64
 
       - name: 提取镜像元数据（后端）
         id: meta-backend
@@ -105,7 +106,8 @@ jobs:
           labels: ${{ steps.meta-backend.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          # 仅支持 amd64 平台（arm64 构建慢 2-3 倍）
+          platforms: linux/amd64
 
       - name: 输出镜像信息
         run: |
