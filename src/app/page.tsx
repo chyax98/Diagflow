@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, createContext, useContext } from "react";
-import { useCoAgent, useCopilotAction, useCopilotChat, CatchAllActionRenderProps, useCopilotChatInternal } from "@copilotkit/react-core";
+import { useCoAgent, useCopilotAction, CatchAllActionRenderProps, useCopilotChatInternal } from "@copilotkit/react-core";
 import { CopilotSidebar, HeaderProps, useChatContext } from "@copilotkit/react-ui";
 import { toast } from "sonner";
 import { AgentState } from "@/lib/types";
