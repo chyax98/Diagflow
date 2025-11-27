@@ -50,15 +50,19 @@ export const ToolResultPartSchema = z.object({
 
 /**
  * Message Part（可以是文本、工具调用或工具结果）
+ * 使用宽松匹配，允许 AI SDK 的各种 part 类型
  */
 export const MessagePartSchema = z.union([
   TextPartSchema,
   ToolCallPartSchema,
   ToolResultPartSchema,
+  // 兜底：允许任何包含 type 字段的对象（AI SDK 可能有其他 part 类型）
+  z.object({ type: z.string() }).passthrough(),
 ]);
 
 /**
  * Chat Message（完整消息格式 - 兼容 AI SDK UIMessage）
+ * 使用 passthrough() 允许 AI SDK 添加的额外字段（如 toolInvocations, annotations 等）
  */
 export const ChatMessageSchema = z.object({
   id: z.string().optional(),
@@ -71,7 +75,10 @@ export const ChatMessageSchema = z.object({
     .optional(),
   parts: z.array(MessagePartSchema).optional(), // AI SDK 使用 parts
   createdAt: z.union([z.date(), z.string()]).optional(), // 支持字符串日期
-});
+  // AI SDK 额外字段
+  toolInvocations: z.array(z.unknown()).optional(),
+  annotations: z.array(z.unknown()).optional(),
+}).passthrough(); // 允许其他未知字段
 
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 

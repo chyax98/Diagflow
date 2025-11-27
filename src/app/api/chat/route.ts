@@ -145,8 +145,13 @@ export async function POST(req: Request) {
     // 验证请求体
     const validationResult = ChatRequestSchema.safeParse(body);
     if (!validationResult.success) {
+      // 详细记录验证失败信息
       logger.warn("Chat 请求参数验证失败", {
         errors: validationResult.error.flatten(),
+        // 记录消息概要（不含完整内容，避免日志过大）
+        messageCount: body?.messages?.length,
+        messageRoles: body?.messages?.map((m: { role?: string }) => m.role),
+        hasCurrentDiagram: !!body?.currentDiagram,
       });
 
       return new Response(
