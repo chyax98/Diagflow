@@ -110,7 +110,7 @@ export const ToolCallResultSchema = z.object({
   diagram_type: z.string().optional(),
   diagram_code: z.string().optional(),
   svg_content: z.string().optional(),
-  error_message: z.string().optional(),
+  error_message: z.string().nullable().optional(),
   code_length: z.number().optional(),
   svg_length: z.number().optional(),
 });

@@ -476,7 +476,11 @@ export function ChatPanel({
               // 过滤有效的 parts（避免渲染空消息框）
               if (!m.parts) return null;
               const validParts = m.parts.filter((part) => {
-                if (part.type === "text") return true;
+                // 文本消息：必须有非空内容
+                if (part.type === "text") {
+                  return (part as { text?: string }).text?.trim();
+                }
+                // 工具调用：仅 assistant 角色
                 if (m.role === "assistant" && part.type?.startsWith("tool-")) return true;
                 return false;
               });
