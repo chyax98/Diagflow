@@ -8,6 +8,7 @@ import { langfuse, isLangfuseEnabled } from "@/lib/langfuse";
 import { nanoid } from "nanoid";
 import { logger } from "@/lib/logger";
 import { ChatRequestSchema } from "@/lib/types";
+import { APP_CONFIG } from "@/config/app";
 
 // 根据环境变量选择 AI 提供商
 // 支持 DIAGFLOW_ 前缀（项目专用）和无前缀（兼容）
@@ -131,8 +132,8 @@ ${ENGINE_SELECTION}
 - 遇到 "Could not parse input" 错误，检查是否使用了不支持的语法特性
 `.trim();
 
-// 允许流式响应最多 30 秒
-export const maxDuration = 30;
+// 流式响应最大时长（从配置读取）
+export const maxDuration = APP_CONFIG.ai.MAX_DURATION_SEC;
 
 export async function POST(req: Request) {
   // 用于错误追踪（langfuse 可能未初始化）
@@ -204,7 +205,7 @@ export async function POST(req: Request) {
 
       // 允许多轮工具调用（查询语法 → 生成代码 → 渲染 → 可能重试）
       // AI SDK v5 使用 stopWhen + stepCountIs 替代 maxSteps
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(APP_CONFIG.ai.MAX_STEPS),
 
       // 启用 telemetry 追踪（自动记录到 Langfuse）
       experimental_telemetry: {

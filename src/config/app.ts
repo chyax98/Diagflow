@@ -24,11 +24,16 @@ export function getAppConfig() {
     },
     timing: {
       DEBOUNCE_MS: parseNumber(process.env.NEXT_PUBLIC_DEBOUNCE_MS, 500),
-      REQUEST_TIMEOUT: parseNumber(process.env.NEXT_PUBLIC_REQUEST_TIMEOUT, 30000),
+      REQUEST_TIMEOUT: parseNumber(process.env.NEXT_PUBLIC_REQUEST_TIMEOUT, 60000),
       AUTO_SAVE_INTERVAL: parseNumber(process.env.NEXT_PUBLIC_AUTO_SAVE_INTERVAL, 30000),
     },
-    api: {
-      MAX_DURATION_SEC: 30,
+    ai: {
+      // 流式响应最大时长（秒），Vercel Hobby 限制 60s，Pro 限制 300s
+      MAX_DURATION_SEC: parseNumber(process.env.DIAGFLOW_MAX_DURATION_SEC, 120),
+      // AI 最大推理步数（工具调用轮数）
+      MAX_STEPS: parseNumber(process.env.DIAGFLOW_MAX_STEPS, 15),
+      // 失败重试次数
+      MAX_RETRIES: parseNumber(process.env.DIAGFLOW_MAX_RETRIES, 3),
     },
   } as const;
 }

@@ -19,9 +19,11 @@ describe('APP_CONFIG', () => {
       expect(config.layout.SIDEBAR_WIDTH).toBe(400);
       expect(config.layout.TOOLBAR_HEIGHT).toBe(52);
       expect(config.timing.DEBOUNCE_MS).toBe(500);
-      expect(config.timing.REQUEST_TIMEOUT).toBe(30000);
+      expect(config.timing.REQUEST_TIMEOUT).toBe(60000);
       expect(config.timing.AUTO_SAVE_INTERVAL).toBe(30000);
-      expect(config.api.MAX_DURATION_SEC).toBe(30);
+      expect(config.ai.MAX_DURATION_SEC).toBe(120);
+      expect(config.ai.MAX_STEPS).toBe(15);
+      expect(config.ai.MAX_RETRIES).toBe(3);
     });
 
     it('环境变量覆盖默认值', () => {
