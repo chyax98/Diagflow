@@ -28,8 +28,9 @@ export function getAppConfig() {
       AUTO_SAVE_INTERVAL: parseNumber(process.env.NEXT_PUBLIC_AUTO_SAVE_INTERVAL, 30000),
     },
     ai: {
-      // 流式响应最大时长（秒），Vercel Hobby 限制 60s，Pro 限制 300s
-      MAX_DURATION_SEC: parseNumber(process.env.DIAGFLOW_MAX_DURATION_SEC, 120),
+      // 流式响应最大时长（秒）- 仅供参考，实际值在 route.ts 中硬编码（Next.js 要求）
+      // Vercel Hobby: 60s, Pro: 300s
+      MAX_DURATION_SEC: 120,
       // AI 最大推理步数（工具调用轮数）
       MAX_STEPS: parseNumber(process.env.DIAGFLOW_MAX_STEPS, 15),
       // 失败重试次数

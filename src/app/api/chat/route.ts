@@ -132,8 +132,10 @@ ${ENGINE_SELECTION}
 - 遇到 "Could not parse input" 错误，检查是否使用了不支持的语法特性
 `.trim();
 
-// 流式响应最大时长（从配置读取）
-export const maxDuration = APP_CONFIG.ai.MAX_DURATION_SEC;
+// 流式响应最大时长（秒）
+// 注意：这是 Next.js segment config，必须是静态值，不能使用运行时配置
+// Vercel Hobby: 60s, Pro: 300s
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   // 用于错误追踪（langfuse 可能未初始化）
