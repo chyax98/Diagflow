@@ -1,0 +1,4 @@
+language: dbml
+description: 数据库标记语言，专注于数据库架构设计
+docs_url: https://dbml.dbdiagram.io/docs/
+version: 1.0.0

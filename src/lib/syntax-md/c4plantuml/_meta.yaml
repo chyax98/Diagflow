@@ -1,0 +1,4 @@
+language: c4plantuml
+description: 基于PlantUML的C4模型架构图语言，用于软件架构可视化
+docs_url: https://github.com/plantuml-stdlib/C4-PlantUML
+version: 1.0.0

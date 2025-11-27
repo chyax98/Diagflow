@@ -1,0 +1,4 @@
+language: wavedrom
+description: 数字时序图绘制工具，使用 JSON 格式描述数字信号波形
+docs_url: https://wavedrom.com/tutorial.html
+version: 1.0.0

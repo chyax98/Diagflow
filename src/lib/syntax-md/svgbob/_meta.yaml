@@ -1,0 +1,4 @@
+language: svgbob
+description: 轻量级 ASCII 转 SVG 工具，自动识别图形并生成清晰的矢量图
+docs_url: https://github.com/ivanceras/svgbob
+version: 1.0.0
