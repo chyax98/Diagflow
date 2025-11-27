@@ -43,9 +43,7 @@ export function TypeChangeDialog({
           >
             新建会话
           </AlertDialogAction>
-          <AlertDialogAction onClick={onConfirm}>
-            在当前会话切换
-          </AlertDialogAction>
+          <AlertDialogAction onClick={onConfirm}>在当前会话切换</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

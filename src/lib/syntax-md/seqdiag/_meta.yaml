@@ -1,4 +1,0 @@
-language: seqdiag
-description: 简洁的时序图生成器,使用类 Python 语法快速绘制交互流程
-docs_url: http://blockdiag.com/en/seqdiag/
-version: 1.0.0

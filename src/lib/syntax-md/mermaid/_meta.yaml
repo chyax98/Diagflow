@@ -1,4 +1,0 @@
-language: mermaid
-description: 基于文本的图表语言，支持流程图、时序图、类图等多种图表类型
-docs_url: https://mermaid.js.org/
-version: 1.0.0

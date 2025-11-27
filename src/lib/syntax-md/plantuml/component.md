@@ -58,8 +58,15 @@ use_cases:
   * frame "框架名称" { ... }
 
 - 端口:
-  * 语法: port "端口名称" as 别名
-  * 或: portin/portout 区分输入输出
+  * 在 node 内部声明:
+    node "节点名" {
+        port p1
+        portin p2
+        portout p3
+    }
+  * port - 通用端口
+  * portin - 输入端口
+  * portout - 输出端口
 
 - 层次架构规则:
   * UI 层 → 业务层 → 数据层
@@ -79,23 +86,53 @@ use_cases:
         行为
     }
 
+- 方向控制:
+  * 全局方向: left to right direction
+  * 箭头方向: -left->, -right->, -up->, -down->
+  * 示例: [组件] -left-> left
+
 - 链接样式:
   * 组件1 -[#red]-> 组件2 - 红色箭头
   * 组件1 -[#blue,dashed]-> 组件2 - 蓝色虚线
+  * 组件1 -[bold]-> 组件2 - 粗箭头
+  * 组件1 -[#red,dashed,thickness=2]-> 组件2 - 组合样式
 
 - 链接标签:
   * 组件1 --> 组件2 : 标签
   * 示例: [前端] --> [后端] : HTTP
 
-- 注释:
+- UML 符号样式:
+  * skinparam componentStyle uml2 - UML2风格（显示组件图标）
+  * skinparam componentStyle uml1 - UML1经典符号
+  * skinparam componentStyle rectangle - 纯矩形框
+
+- 注释语法:
+  * 单行注释: ' 注释内容
+  * 多行注释: /' 注释内容 '/
+  * ❌ 不支持 // 或 #（这是其他引擎的语法）
+
+- 图表注释:
   * note left of 组件: 注释
   * note right of 组件: 注释
   * note top of 组件: 注释
   * note bottom of 组件: 注释
 
-- 隐藏元素:
+- 隐藏和移除:
+  * hide @unlinked - 隐藏未连接的组件
   * hide 组件名
   * remove 组件名
+  * remove $tag - 移除标记的元素
+  * restore $tag - 恢复已移除的元素
+
+- 标签系统:
+  * component C1 $tag - 标记组件
+  * hide $tag - 隐藏标记
+  * remove * - 移除所有
+  * restore $tag - 恢复标记
+
+- 混合图元:
+  * allowmixing - 允许混合其他图类型元素
+  * json JSON { "key": "value" } - 嵌入JSON数据显示
 
 ## 设计建议
 - 组件数量: 5-15 个为佳
@@ -119,20 +156,26 @@ use_cases:
 - ⚠️ 连接建议 ≤50 条
 
 常见错误排查：
-1. 组件名称未使用方括号
+1. 注释语法错误
+   ❌ // 这是注释（错误，PlantUML 不支持 //）
+   ❌ # 这是注释（错误，PlantUML 不支持 #）
+   ✓ ' 这是单行注释
+   ✓ /' 这是多行注释 '/
+
+2. 组件名称未使用方括号
    ❌ 组件A --> 组件B
    ✓ [组件A] --> [组件B]
 
-2. 构造型语法错误
+3. 构造型语法错误
    ❌ [组件] <service>
    ✓ [组件] <<service>>
 
-3. 接口连接方向错误
+4. 接口连接方向错误
    ❌ 组件 (- 接口（需要接口用错符号）
    ✓ 组件 )- 接口（需要接口）
    ✓ 组件 -( 接口（提供接口）
 
-4. 分组未闭合
+5. 分组未闭合
    ❌ package "包名" {
           [组件]
       （缺少闭合括号）
@@ -140,7 +183,7 @@ use_cases:
           [组件]
       }
 
-5. 循环依赖
+6. 循环依赖
    ❌ [A] --> [B]
       [B] --> [A]
    ✓ 重新设计，消除循环

@@ -2,9 +2,9 @@
  * 撤销/重做 Hook
  * 使用 useReducer 管理撤销栈
  */
-import { useReducer, useCallback, useMemo } from 'react';
-import { STORAGE_CONFIG } from './constants';
-import type { DiagramSnapshot } from './storage';
+import { useReducer, useCallback, useMemo } from "react";
+import { STORAGE_CONFIG } from "./constants";
+import type { DiagramSnapshot } from "./storage";
 
 // ============================================================================
 // 类型定义
@@ -17,11 +17,11 @@ export interface UndoState {
 }
 
 type UndoAction =
-  | { type: 'SET'; payload: Partial<DiagramSnapshot> }
-  | { type: 'UNDO' }
-  | { type: 'REDO' }
-  | { type: 'RESET'; payload: DiagramSnapshot }
-  | { type: 'CLEAR_HISTORY' };
+  | { type: "SET"; payload: Partial<DiagramSnapshot> }
+  | { type: "UNDO" }
+  | { type: "REDO" }
+  | { type: "RESET"; payload: DiagramSnapshot }
+  | { type: "CLEAR_HISTORY" };
 
 // ============================================================================
 // Reducer
@@ -29,7 +29,7 @@ type UndoAction =
 
 function undoReducer(state: UndoState, action: UndoAction): UndoState {
   switch (action.type) {
-    case 'SET': {
+    case "SET": {
       const newPresent: DiagramSnapshot = {
         ...state.present,
         ...action.payload,
@@ -51,7 +51,7 @@ function undoReducer(state: UndoState, action: UndoAction): UndoState {
       };
     }
 
-    case 'UNDO': {
+    case "UNDO": {
       if (state.past.length === 0) return state;
 
       const previous = state.past[state.past.length - 1];
@@ -64,7 +64,7 @@ function undoReducer(state: UndoState, action: UndoAction): UndoState {
       };
     }
 
-    case 'REDO': {
+    case "REDO": {
       if (state.future.length === 0) return state;
 
       const next = state.future[0];
@@ -77,7 +77,7 @@ function undoReducer(state: UndoState, action: UndoAction): UndoState {
       };
     }
 
-    case 'RESET': {
+    case "RESET": {
       return {
         past: [],
         present: action.payload,
@@ -85,7 +85,7 @@ function undoReducer(state: UndoState, action: UndoAction): UndoState {
       };
     }
 
-    case 'CLEAR_HISTORY': {
+    case "CLEAR_HISTORY": {
       return {
         past: [],
         present: state.present,
@@ -133,36 +133,39 @@ export function useUndo({ initialState }: UseUndoOptions): UseUndoReturn {
   });
 
   const set = useCallback((payload: Partial<DiagramSnapshot>) => {
-    dispatch({ type: 'SET', payload });
+    dispatch({ type: "SET", payload });
   }, []);
 
   const undo = useCallback(() => {
-    dispatch({ type: 'UNDO' });
+    dispatch({ type: "UNDO" });
   }, []);
 
   const redo = useCallback(() => {
-    dispatch({ type: 'REDO' });
+    dispatch({ type: "REDO" });
   }, []);
 
   const reset = useCallback((newState: DiagramSnapshot) => {
-    dispatch({ type: 'RESET', payload: newState });
+    dispatch({ type: "RESET", payload: newState });
   }, []);
 
   const clearHistory = useCallback(() => {
-    dispatch({ type: 'CLEAR_HISTORY' });
+    dispatch({ type: "CLEAR_HISTORY" });
   }, []);
 
-  return useMemo(() => ({
-    state: undoState.present,
-    canUndo: undoState.past.length > 0,
-    canRedo: undoState.future.length > 0,
-    undoCount: undoState.past.length,
-    redoCount: undoState.future.length,
-    set,
-    undo,
-    redo,
-    reset,
-    clearHistory,
-    fullState: undoState,
-  }), [undoState, set, undo, redo, reset, clearHistory]);
+  return useMemo(
+    () => ({
+      state: undoState.present,
+      canUndo: undoState.past.length > 0,
+      canRedo: undoState.future.length > 0,
+      undoCount: undoState.past.length,
+      redoCount: undoState.future.length,
+      set,
+      undo,
+      redo,
+      reset,
+      clearHistory,
+      fullState: undoState,
+    }),
+    [undoState, set, undo, redo, reset, clearHistory]
+  );
 }

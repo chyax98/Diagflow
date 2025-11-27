@@ -1,4 +1,0 @@
-language: nwdiag
-description: 网络拓扑图生成器,使用类 Python 语法展示网络架构和节点连接
-docs_url: http://blockdiag.com/en/nwdiag/
-version: 1.0.0

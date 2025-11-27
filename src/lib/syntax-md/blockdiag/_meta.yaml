@@ -1,4 +1,0 @@
-language: blockdiag
-description: 简单的块状图绘制工具,类 Python 语法,适合绘制架构图和流程图
-docs_url: http://blockdiag.com/en/blockdiag/examples.html
-version: 1.0.0

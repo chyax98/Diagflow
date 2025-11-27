@@ -1,0 +1,16 @@
+// 简化方案对比
+
+// ========== 当前方案（5个ref） ==========
+const prevSessionLoadingRef = useRef(true);
+const initialRenderPendingRef = useRef(true);
+const sessionIdRef = useRef(sessionId);
+const hasInitializedRef = useRef(false);
+const prevTypeRef = useRef(diagram.diagram_type);
+
+// 3个独立的 useEffect 处理不同场景
+
+// ========== 简化方案（2个ref） ==========
+const renderStateRef = useRef<"idle" | "initializing" | "ready">("idle");
+const lastRenderTriggerRef = useRef<{ sessionId: string; diagramType: string } | null>(null);
+
+// 统一的渲染调度逻辑

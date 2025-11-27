@@ -21,6 +21,16 @@ use_cases:
     }
   * 方式2（简化）:
     class 类名
+  * 其他类型:
+    - abstract class 抽象类名
+    - interface 接口名
+    - enum 枚举名
+    - annotation 注解名
+    - exception 异常名
+    - protocol 协议名
+    - struct 结构体名
+    - dataclass 数据类名
+    - record 记录类名
 
 - 可见性修饰符（必须标注）:
   * - private（私有）
@@ -45,18 +55,25 @@ use_cases:
   * 示例: + {abstract} void eat()
 
 - 关系类型:
-  * <|-- 继承（实线三角箭头，子类→父类）
-  * <|.. 实现（虚线三角箭头，实现类→接口）
-  * *-- 组合（实心菱形，整体→部分，生命周期绑定）
-  * o-- 聚合（空心菱形，整体→部分，生命周期独立）
-  * --> 关联（实线箭头）
-  * ..> 依赖（虚线箭头）
+  * <|-- 或 --|> 继承（实线三角箭头）
+  * <|.. 或 ..|> 实现（虚线三角箭头）
+  * *-- 或 --* 组合（实心菱形，生命周期绑定）
+  * o-- 或 --o 聚合（空心菱形，生命周期独立）
+  * --> 或 <-- 关联（实线箭头）
+  * ..> 或 <.. 依赖（虚线箭头）
   * -- 无方向关联
+  * 可用 .. 替代 -- 变为虚线
 
 - 关系方向规则:
   * 继承/实现: 子类→父类，实现类→接口
   * 组合/聚合: 整体→部分
   * 关联/依赖: 根据语义决定
+
+- 关键字语法:
+  * extends - 继承关系
+  * implements - 实现关系
+  * 示例: Class01 extends Class02
+  * 示例: Class03 implements Interface01
 
 - 类修饰符:
   * abstract class 抽象类名 - 抽象类
@@ -102,7 +119,12 @@ use_cases:
         class 类名
     }
 
-- 注释:
+- 注释语法:
+  * 单行注释: ' 注释内容
+  * 多行注释: /' 注释内容 '/
+  * ❌ 不支持 // 或 #（这是其他引擎的语法）
+
+- 图表注释:
   * note left of 类名: 注释
   * note right of 类名: 注释
   * note top of 类名: 注释
@@ -110,19 +132,39 @@ use_cases:
   * note "注释" as N1
   * 类名 .. N1
 
+- 类体分隔符:
+  * -- 实线分隔符
+  * .. 虚线分隔符
+  * == 双线分隔符
+  * __ 粗线分隔符
+  * 可在分隔符间添加节标题
+
 - 样式定制:
-  * 类名 #线条颜色 - 设置边框颜色
-  * 类名 ##背景颜色 - 设置背景色
+  * 类名 #颜色 - 设置边框颜色
+  * 类名 ##颜色 - 设置背景色
+  * 类名 #back:red;line:00FFFF;line.bold - 详细样式
   * 示例: class User #red
+  * 示例: class Bar #palegreen ##[dashed]green
+
+- 关系样式:
+  * 链接颜色和样式: -[#color]->
+  * 示例: foo -[bold]-> bar
+  * 示例: foo -[#red,dashed,thickness=2]-> bar
 
 - 关系标签:
   * 语法: Class1 --> Class2 : 标签
   * 示例: Dog --|> Animal : extends
 
-- 隐藏成员:
+- 隐藏和移除:
   * hide 类名 members - 隐藏成员
   * hide empty members - 隐藏空成员
+  * hide @unlinked - 隐藏未连接的类
+  * remove 类名 - 移除类
   * show 类名 methods - 只显示方法
+
+- 关联类:
+  * 语法: (Class1, Class2) .. AssociationClass
+  * 示例: (Student, Course) .. Enrollment
 
 ## 设计建议
 - 类数量: 5-20 个为佳
@@ -140,23 +182,29 @@ use_cases:
 - ⚠️ 关系建议 ≤50 条
 
 常见错误排查：
-1. 缺少可见性修饰符
+1. 注释语法错误
+   ❌ // 这是注释（错误，PlantUML 不支持 //）
+   ❌ # 这是注释（错误，PlantUML 不支持 #）
+   ✓ ' 这是单行注释
+   ✓ /' 这是多行注释 '/
+
+2. 缺少可见性修饰符
    ❌ String name
    ✓ + String name
 
-2. 关系方向错误
+3. 关系方向错误
    ❌ Animal <|-- Dog（父类→子类错误）
    ✓ Dog --|> Animal（子类→父类正确）
 
-3. 抽象方法语法错误
+4. 抽象方法语法错误
    ❌ abstract void eat()
    ✓ + {abstract} void eat()
 
-4. 泛型语法错误（PlantUML支持<>）
+5. 泛型语法错误（PlantUML支持<>）
    ✓ class List<T>
    ✓ class Map<K,V>
 
-5. 方法参数格式错误
+6. 方法参数格式错误
    ❌ + setName(name)
    ✓ + setName(String name)
 

@@ -12,14 +12,16 @@ use_cases:
 核心语法要点：
 - 强制包裹: @startuml 和 @enduml
 - 强制库引用: !include <C4/C4_Component>
-  * 在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
   * 注意: Component库继承Container和Context
+  * ❌ Kroki 不支持在线 URL include（安全限制）
 
 组件元素定义：
-- 通用组件: Component(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link)
+- 通用组件: Component(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link, ?baseShape)
 - 数据库组件: ComponentDb(alias, "数据库", "类型", "描述", ?sprite, ?tags, ?link)
 - 队列组件: ComponentQueue(alias, "队列", "技术", "描述", ?sprite, ?tags, ?link)
-- 外部组件: Component_Ext(alias, "外部组件", "技术", "描述", ?sprite, ?tags, ?link)
+- 外部组件: Component_Ext(alias, "外部组件", "技术", "描述", ?sprite, ?tags, ?link, ?baseShape)
+- 外部数据库: ComponentDb_Ext(alias, "外部数据库", "类型", "描述", ?sprite, ?tags, ?link)
+- 外部队列: ComponentQueue_Ext(alias, "外部队列", "技术", "描述", ?sprite, ?tags, ?link)
 
 组件边界：
 - Component_Boundary(alias, "组件组名") { ... }
@@ -48,8 +50,10 @@ use_cases:
 - 模式: "Repository Pattern", "Factory Pattern", "Singleton"
 
 布局建议：
-- LAYOUT_TOP_DOWN() - 适合分层架构
+- LAYOUT_TOP_DOWN() - 适合分层架构（默认）
 - LAYOUT_LEFT_RIGHT() - 适合管道/过滤器模式
+- LAYOUT_LANDSCAPE() - 横向布局
+- SHOW_LEGEND() - 显示图例
 - 使用Lay_Distance()调整间距
 
 最佳实践：

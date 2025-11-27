@@ -14,14 +14,33 @@ use_cases:
   * @startuml 和 @enduml 包裹所有内容
 
 - 节点类型:
-  * node "节点名称" - 通用节点/服务器
-  * artifact "工件名称" - 软件工件/应用
-  * database "数据库名称" - 数据库
-  * cloud "云服务名称" - 云服务
-  * folder "文件夹名称" - 文件夹
-  * package "软件包名称" - 软件包
-  * frame "框架名称" - 框架容器
-  * storage "存储名称" - 存储设备
+  * actor - 参与者
+  * agent - 代理
+  * artifact - 软件工件/应用
+  * boundary - 边界
+  * card - 卡片
+  * circle - 圆形
+  * cloud - 云服务
+  * collections - 集合
+  * component - 组件
+  * control - 控制器
+  * database - 数据库
+  * entity - 实体
+  * file - 文件
+  * folder - 文件夹
+  * frame - 框架容器
+  * hexagon - 六边形
+  * interface - 接口
+  * label - 标签
+  * node - 通用节点/服务器
+  * package - 软件包
+  * person - 人物
+  * process - 进程
+  * queue - 队列
+  * rectangle - 矩形
+  * stack - 堆栈
+  * storage - 存储设备
+  * usecase - 用例
 
 - 部署关系:
   * 嵌套方式（推荐）:
@@ -50,10 +69,30 @@ use_cases:
         }
     }
 
+- 短形式语法:
+  * actor: :actor_name:
+  * component: [component_name]
+  * interface: () "interface_name"
+  * usecase: (usecase_name)
+
 - 连接样式:
-  * 实线: -- 或 -->
-  * 虚线: .. 或 ..>
-  * 粗线: == 或 ==>
+  * 基础线型:
+    - -- 实线
+    - == 粗线
+    - .. 虚线
+    - ~~ 波浪线
+  * 箭头头部类型:
+    - --> 标准箭头
+    - --* 星号
+    - --o 空心圆
+    - --+ 加号
+    - --# 方块
+    - -->> 双箭头
+    - --0 数字0
+    - --^ 插入符
+    - --(0 带括号的0
+  * 圆形连接:
+    - 0--0, )--(, 0)--(0, 0)--, -0)-, -(0)-, -(0-, --(0, --(
 
 - 网络标记:
   * 语法: [节点1] --> [节点2] : 协议
@@ -69,23 +108,48 @@ use_cases:
   * [节点1] -[#red]-> [节点2]
   * [节点1] -[#0000FF]-> [节点2]
 
-- 链接样式:
+- 链接样式（括号内联）:
   * [节点1] -[bold]-> [节点2]
   * [节点1] -[dashed]-> [节点2]
+  * [节点1] -[#red,dashed,thickness=2]-> [节点2]
 
-- 标签位置:
-  * left/right/up/down
+- 方向控制:
+  * 全局: top to bottom direction（默认）
+  * 全局: left to right direction
+  * 箭头方向: left/right/up/down
   * 示例: [A] -left-> [B]
 
-- 注释:
+- 注释语法:
+  * 单行注释: ' 注释内容
+  * 多行注释: /' 注释内容 '/
+  * ❌ 不支持 // 或 #（这是其他引擎的语法）
+
+- 图表注释:
   * note left of 节点: 注释
   * note right of 节点: 注释
   * note "注释" as N1
   * 节点 .. N1
 
-- 参与者:
-  * actor 用户
-  * 用于表示系统外部用户
+- 混合图元:
+  * allowmixing - 允许混合类图、部署图元素
+  * json JSON { "key": "value" } - 嵌入JSON数据显示
+
+- 内联样式:
+  * node n #颜色;line:蓝色;line.dotted;text:红色
+  * 示例: node n #aliceblue;line:blue;line.dotted;text:red
+
+- 全局样式:
+  * <style> ... </style> 块
+  * 示例:
+    <style>
+    componentDiagram {
+      BackGroundColor palegreen
+      LineThickness 2
+    }
+    node {
+      BackGroundColor #ff6644
+    }
+    </style>
 
 ## 设计建议
 - 节点数量: 5-20 个
@@ -117,7 +181,13 @@ use_cases:
 - ⚠️ 避免过度嵌套
 
 常见错误排查：
-1. 嵌套未闭合
+1. 注释语法错误
+   ❌ // 这是注释（错误，PlantUML 不支持 //）
+   ❌ # 这是注释（错误，PlantUML 不支持 #）
+   ✓ ' 这是单行注释
+   ✓ /' 这是多行注释 '/
+
+2. 嵌套未闭合
    ❌ node "服务器" {
           artifact "应用"
       （缺少闭合括号）
@@ -125,19 +195,19 @@ use_cases:
           artifact "应用"
       }
 
-2. 节点名称未引号
+3. 节点名称未引号
    ❌ node Web服务器
    ✓ node "Web服务器"
 
-3. 工件和节点混淆
+4. 工件和节点混淆
    ❌ node "Nginx"（Nginx 是软件，应该是 artifact）
    ✓ artifact "Nginx"
 
-4. 协议标注位置错误
+5. 协议标注位置错误
    ❌ HTTP : [A] --> [B]
    ✓ [A] --> [B] : HTTP
 
-5. 过度嵌套
+6. 过度嵌套
    ❌ 5-6 层嵌套
    ✓ ≤3 层嵌套
 

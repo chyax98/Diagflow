@@ -1,7 +1,9 @@
-const REQUEST_TIMEOUT = 30000; // 30 秒超时
+import { APP_CONFIG } from "@/config/app";
+
+const REQUEST_TIMEOUT = APP_CONFIG.timing.REQUEST_TIMEOUT;
 
 // Kroki 服务地址
-const KROKI_BASE_URL = process.env.NEXT_PUBLIC_KROKI_BASE_URL || 'https://kroki.io';
+const KROKI_BASE_URL = process.env.NEXT_PUBLIC_KROKI_BASE_URL || "https://kroki.io";
 
 // ============================================================================
 // 自定义错误类型
@@ -15,7 +17,7 @@ export class KrokiRenderError extends Error {
 
   constructor(message: string) {
     super(message);
-    this.name = 'KrokiRenderError';
+    this.name = "KrokiRenderError";
   }
 }
 
@@ -25,9 +27,9 @@ export class KrokiRenderError extends Error {
 export class KrokiTimeoutError extends Error {
   readonly isTimeout = true;
 
-  constructor(message = '请求超时，请简化图表或稍后重试') {
+  constructor(message = "请求超时，请简化图表或稍后重试") {
     super(message);
-    this.name = 'KrokiTimeoutError';
+    this.name = "KrokiTimeoutError";
   }
 }
 
@@ -35,7 +37,7 @@ export class KrokiTimeoutError extends Error {
 // 导出格式能力映射（基于 Kroki 官方文档）
 // ============================================================================
 
-export type ExportFormat = 'svg' | 'png' | 'pdf' | 'jpeg';
+export type ExportFormat = "svg" | "png" | "pdf" | "jpeg";
 
 export interface ExportCapability {
   svg: boolean;
@@ -100,13 +102,15 @@ export const EXPORT_CAPABILITIES: Record<string, ExportCapability> = {
  * 获取指定引擎的导出能力
  */
 export function getExportCapability(engine: string): ExportCapability {
-  return EXPORT_CAPABILITIES[engine] || {
-    svg: true,
-    png: false,
-    pdf: false,
-    jpeg: false,
-    pngOpaque: false,
-  };
+  return (
+    EXPORT_CAPABILITIES[engine] || {
+      svg: true,
+      png: false,
+      pdf: false,
+      jpeg: false,
+      pngOpaque: false,
+    }
+  );
 }
 
 /**
@@ -150,12 +154,12 @@ export async function renderKroki(
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
-    const krokiUrl = `${KROKI_BASE_URL.replace(/\/$/, '')}/${engine}/${format}`;
+    const krokiUrl = `${KROKI_BASE_URL.replace(/\/$/, "")}/${engine}/${format}`;
 
     const response = await fetch(krokiUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'text/plain',
+        "Content-Type": "text/plain",
         ...options.extraHeaders,
       },
       body: code,
@@ -168,11 +172,11 @@ export async function renderKroki(
     }
 
     const content = await response.arrayBuffer();
-    const contentType = response.headers.get('content-type') || 'image/svg+xml';
+    const contentType = response.headers.get("content-type") || "image/svg+xml";
 
     return { content, contentType };
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new KrokiTimeoutError();
     }
     throw error;
@@ -184,13 +188,10 @@ export async function renderKroki(
 /**
  * 服务端渲染 SVG（用于 AI Agent 工具调用）
  */
-export async function renderDiagramServer(
-  diagramType: string,
-  code: string
-): Promise<string> {
-  const result = await renderKroki(diagramType, 'svg', code);
+export async function renderDiagramServer(diagramType: string, code: string): Promise<string> {
+  const result = await renderKroki(diagramType, "svg", code);
   const svg = new TextDecoder().decode(result.content);
-  return svg.replace(/^<\?xml[^?]*\?>\s*/i, '');
+  return svg.replace(/^<\?xml[^?]*\?>\s*/i, "");
 }
 
 // ============================================================================
@@ -215,9 +216,9 @@ async function krokiRequestClient(
 
   try {
     const response = await fetch(`/api/render/${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'text/plain',
+        "Content-Type": "text/plain",
         ...options.extraHeaders,
       },
       body: code,
@@ -236,8 +237,8 @@ async function krokiRequestClient(
 
     return response;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('请求超时，请简化图表或稍后重试');
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("请求超时，请简化图表或稍后重试");
     }
     throw error;
   } finally {
@@ -248,22 +249,16 @@ async function krokiRequestClient(
 /**
  * 浏览器端渲染 SVG（通过 API Route 代理）
  */
-export async function renderDiagram(
-  diagramType: string,
-  code: string
-): Promise<string> {
+export async function renderDiagram(diagramType: string, code: string): Promise<string> {
   const response = await krokiRequestClient(`${diagramType}/svg`, code);
   const svg = await response.text();
-  return svg.replace(/^<\?xml[^?]*\?>\s*/i, '');
+  return svg.replace(/^<\?xml[^?]*\?>\s*/i, "");
 }
 
 /**
  * 导出 PNG（透明背景）
  */
-export async function exportPng(
-  diagramType: string,
-  code: string
-): Promise<Blob> {
+export async function exportPng(diagramType: string, code: string): Promise<Blob> {
   const response = await krokiRequestClient(`${diagramType}/png`, code);
   return response.blob();
 }
@@ -272,13 +267,10 @@ export async function exportPng(
  * 导出 PNG（白色背景）
  * 注意：只有 BlockDiag 系列支持 no-transparency 参数
  */
-export async function exportPngOpaque(
-  diagramType: string,
-  code: string
-): Promise<Blob> {
+export async function exportPngOpaque(diagramType: string, code: string): Promise<Blob> {
   const response = await krokiRequestClient(`${diagramType}/png`, code, {
     extraHeaders: {
-      'Kroki-Diagram-Options-no-transparency': '',
+      "Kroki-Diagram-Options-no-transparency": "",
     },
   });
   return response.blob();
@@ -287,10 +279,7 @@ export async function exportPngOpaque(
 /**
  * 导出 JPEG
  */
-export async function exportJpeg(
-  diagramType: string,
-  code: string
-): Promise<Blob> {
+export async function exportJpeg(diagramType: string, code: string): Promise<Blob> {
   const response = await krokiRequestClient(`${diagramType}/jpeg`, code);
   return response.blob();
 }
@@ -298,10 +287,7 @@ export async function exportJpeg(
 /**
  * 导出 PDF
  */
-export async function exportPdf(
-  diagramType: string,
-  code: string
-): Promise<Blob> {
+export async function exportPdf(diagramType: string, code: string): Promise<Blob> {
   const response = await krokiRequestClient(`${diagramType}/pdf`, code);
   return response.blob();
 }

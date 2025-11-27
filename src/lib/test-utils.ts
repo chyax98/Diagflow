@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 /**
  * Mock fetch 响应辅助函数
@@ -20,7 +20,7 @@ export function mockFetchError(error: Error) {
 export function createMockResponse(body: string, init?: ResponseInit): Response {
   return new Response(body, {
     status: 200,
-    headers: { 'content-type': 'image/svg+xml' },
+    headers: { "content-type": "image/svg+xml" },
     ...init,
   });
 }

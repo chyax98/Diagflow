@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Cache
+.turbo
+.cache
+.vercel
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# Logs
+*.log
+
+# Coverage
+coverage
+
+# Package manager
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Other
+public
+.vscode
+.idea
+*.md

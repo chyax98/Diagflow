@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { MainToolbar } from "@/components/layout/main-toolbar";
 import { ExportControls } from "@/components/layout/export-controls";
 import { Workspace } from "@/components/layout/workspace";
-import { UnsavedChangesDialog } from "@/components/dialogs/unsaved-changes-dialog";
-import { TypeChangeDialog } from "@/components/dialogs/type-change-dialog";
+// ❌ 删除对话框导入 - 改用 Toast
 import { type ToolCallResult } from "@/components/chat-panel";
+import type { UIMessage } from "@ai-sdk/react";
 import {
   exportPng,
   exportPngOpaque,
@@ -19,7 +19,8 @@ import { useDebounce } from "@/lib/hooks";
 import { useSession } from "@/lib/use-session";
 import { useRenderControl } from "@/lib/use-render-control";
 import { DEFAULT_TEMPLATES } from "@/lib/constants";
-
+import { APP_CONFIG } from "@/config/app";
+import { handleError } from "@/lib/error-handler";
 
 export default function Home() {
   // 会话管理
@@ -41,50 +42,31 @@ export default function Home() {
     renameSession,
     saveNow,
     hasPendingChanges,
-    resetPendingChanges,
   } = useSession();
 
   // 渲染控制（统一入口）
   const { svgContent, errorMessage, isRendering, performRender } = useRenderControl();
 
-  // 类型切换确认弹框状态
-  const [pendingTypeChange, setPendingTypeChange] = useState<string | null>(null);
-  
-  // 保存确认弹框状态
-  const [showSaveDialog, setShowSaveDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  // ❌ 删除所有弹框状态 - 改用 Toast
+  // const [pendingTypeChange, setPendingTypeChange] = useState<string | null>(null);
+  // const [showSaveDialog, setShowSaveDialog] = useState(false);
 
-  // 会话加载状态跟踪
-  const prevSessionLoadingRef = useRef(true);
-  const initialRenderPendingRef = useRef(true);
+  // ✅ 保存当前状态用于撤销
+  const previousStateRef = useRef<{
+    diagram_type: string;
+    diagram_code: string;
+    messages: UIMessage[];
+  } | null>(null);
 
-  // 会话切换时立即重新渲染（不等 debounce）
-  const sessionIdRef = useRef(sessionId);
-  const hasInitializedRef = useRef(false);
+  // ✅ 简化的渲染状态管理（状态机 + 触发追踪）
+  // 渲染状态机：idle（未初始化） -> initializing（首次加载中） -> ready（可响应变化）
+  const renderStateRef = useRef<"idle" | "initializing" | "ready">("idle");
 
-  useEffect(() => {
-    // 跳过初始加载
-    if (!sessionId || isSessionLoading) {
-      sessionIdRef.current = sessionId;
-      return;
-    }
-
-    // 首次加载完成，标记已初始化，由初始渲染 effect 处理
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      sessionIdRef.current = sessionId;
-      return;
-    }
-
-    // 相同会话不重复渲染
-    if (sessionIdRef.current === sessionId) {
-      return;
-    }
-    sessionIdRef.current = sessionId;
-
-    // 会话切换：使用统一渲染函数
-    performRender(diagram.diagram_type, diagram.diagram_code);
-  }, [sessionId, isSessionLoading, diagram.diagram_type, diagram.diagram_code, performRender]);
+  // 上次渲染的触发信息（用于检测会话切换和类型变化）
+  const lastRenderTriggerRef = useRef<{
+    sessionId: string | null;
+    diagramType: string;
+  } | null>(null);
 
   // 获取当前引擎的导出能力
   const exportCapability = useMemo(
@@ -92,39 +74,106 @@ export default function Home() {
     [diagram.diagram_type]
   );
 
-  // 处理工具调用结果（AI 生成的图表）
-  const handleToolResult = useCallback((result: ToolCallResult) => {
-    if (result?.success) {
+  // ✅ 简化的 AI 工具调用处理
+  const handleToolResult = useCallback(
+    (result: ToolCallResult) => {
+      if (!result?.success) {
+        if (result?.error_message) {
+          handleError(result.error_message, {
+            level: "critical",
+            userMessage: result.error_message,
+          });
+        }
+        return;
+      }
+
       const newType = result.diagram_type || diagram.diagram_type;
       const newCode = result.diagram_code || diagram.diagram_code;
 
-      setDiagram({
-        diagram_type: newType,
-        diagram_code: newCode,
-      });
+      // ✅ AI 返回不同类型，直接切换（无需确认）
+      if (newType !== diagram.diagram_type) {
+        // 保存当前状态用于撤销
+        previousStateRef.current = {
+          diagram_type: diagram.diagram_type,
+          diagram_code: diagram.diagram_code,
+          messages: [...messages],
+        };
 
-      // 渲染会由 sessionId/diagram 变化的 effect 自动触发
-      // 不需要手动调用 performRender（避免重复渲染）
-    } else if (result?.error_message) {
-      // errorMessage 由 useRenderControl 管理，这里无需设置
-      toast.error(result.error_message);
-    }
-  }, [diagram.diagram_type, diagram.diagram_code, setDiagram]);
+        setDiagram({
+          diagram_type: newType,
+          diagram_code: newCode,
+        });
 
-  // Debounce 渲染
-  const debouncedCode = useDebounce(diagram.diagram_code, 500);
+        // ✅ 渲染由 effect 自动触发
+      } else {
+        // 类型相同，只更新代码
+        setDiagram({ diagram_code: newCode });
+      }
+    },
+    [diagram.diagram_type, diagram.diagram_code, messages, setDiagram, performRender]
+  );
+
+  // ✅ 统一的渲染调度器（合并 3 个场景）
+  const debouncedCode = useDebounce(diagram.diagram_code, APP_CONFIG.timing.DEBOUNCE_MS);
 
   useEffect(() => {
-    // 跳过初始加载期间（由初始渲染 effect 处理）
-    if (!hasInitializedRef.current) return;
-    // 跳过初始渲染待处理期间
-    if (initialRenderPendingRef.current) return;
-    // 跳过空内容
-    if (!debouncedCode.trim()) return;
+    // 场景 1：初始加载（idle -> initializing -> ready）
+    if (renderStateRef.current === "idle" && !isSessionLoading) {
+      renderStateRef.current = "initializing";
 
-    // 使用统一渲染函数（自动处理版本控制和重复检测）
-    performRender(diagram.diagram_type, debouncedCode);
-  }, [debouncedCode, diagram.diagram_type, performRender]);
+      if (diagram.diagram_code.trim()) {
+        performRender(diagram.diagram_type, diagram.diagram_code).finally(() => {
+          renderStateRef.current = "ready";
+          lastRenderTriggerRef.current = {
+            sessionId,
+            diagramType: diagram.diagram_type,
+          };
+        });
+      } else {
+        // 无内容，直接进入 ready 状态
+        renderStateRef.current = "ready";
+        lastRenderTriggerRef.current = {
+          sessionId,
+          diagramType: diagram.diagram_type,
+        };
+      }
+      return;
+    }
+
+    // 等待初始化完成
+    if (renderStateRef.current !== "ready") return;
+    if (!diagram.diagram_code.trim()) return;
+
+    const lastTrigger = lastRenderTriggerRef.current;
+
+    // 场景 2：会话切换（立即渲染）
+    const sessionChanged = lastTrigger?.sessionId !== sessionId;
+    if (sessionChanged) {
+      performRender(diagram.diagram_type, diagram.diagram_code);
+      lastRenderTriggerRef.current = {
+        sessionId,
+        diagramType: diagram.diagram_type,
+      };
+      return;
+    }
+
+    // 场景 3：类型切换（立即渲染，取消防抖）
+    const typeChanged = lastTrigger?.diagramType !== diagram.diagram_type;
+    if (typeChanged) {
+      performRender(diagram.diagram_type, diagram.diagram_code);
+      lastRenderTriggerRef.current = {
+        sessionId,
+        diagramType: diagram.diagram_type,
+      };
+      return;
+    }
+
+    // 场景 4：代码编辑（防抖渲染）
+    if (debouncedCode.trim()) {
+      performRender(diagram.diagram_type, debouncedCode);
+      // 不更新 lastRenderTriggerRef（代码变化不算触发源变化）
+    }
+  }, [sessionId, isSessionLoading, diagram.diagram_type, diagram.diagram_code, debouncedCode, performRender]);
 
   // 导出处理
   const handleExport = async (format: "svg" | "png" | "png-opaque" | "jpeg" | "pdf") => {
@@ -151,111 +200,134 @@ export default function Home() {
         downloadBlob(await exportPdf(diagram.diagram_type, diagram.diagram_code), "pdf");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "导出失败");
+      handleError(error, { level: "critical", userMessage: "导出失败" });
     }
   };
 
   // 实际执行类型切换（内部函数）
-  const performTypeChange = useCallback(async (type: string) => {
-    const newCode = DEFAULT_TEMPLATES[type] || "";
+  // ✅ 简化的类型切换逻辑
+  const handleTypeChange = useCallback(
+    (type: string) => {
+      if (type === diagram.diagram_type) return;
 
-    // 更新状态
-    setDiagram({
-      diagram_type: type,
-      diagram_code: newCode,
-    });
+      // 保存当前状态用于撤销
+      previousStateRef.current = {
+        diagram_type: diagram.diagram_type,
+        diagram_code: diagram.diagram_code,
+        messages: [...messages],
+      };
 
-    // 使用统一渲染函数
-    await performRender(type, newCode);
-  }, [setDiagram, performRender]);
+      const newCode = DEFAULT_TEMPLATES[type] || "";
 
-  const proceedTypeChangeCheck = useCallback((type: string) => {
-    if (type === diagram.diagram_type) return;
-    const currentDefault = DEFAULT_TEMPLATES[diagram.diagram_type] || "";
-    const isModified = diagram.diagram_code.trim() !== currentDefault.trim();
-    if (isModified) {
-      setPendingTypeChange(type);
-    } else {
-      performTypeChange(type);
-    }
-  }, [diagram.diagram_type, diagram.diagram_code, performTypeChange]);
+      // ✅ 立即切换（不等待）
+      setDiagram({
+        diagram_type: type,
+        diagram_code: newCode,
+      });
+      setMessages([]);
 
-  const handleTypeChange = useCallback((type: string) => {
-    if (type === diagram.diagram_type) return;
-    if (hasPendingChanges) {
-      setPendingUnsavedAction({ kind: "typeChange", type });
-      return;
-    }
-    proceedTypeChangeCheck(type);
-  }, [diagram.diagram_type, hasPendingChanges, proceedTypeChangeCheck]);
+      // ✅ 渲染由 effect 自动触发，无需手动调用
 
-  // 确认切换：在当前会话中切换
-  const handleConfirmTypeChange = useCallback(() => {
-    if (pendingTypeChange) {
-      performTypeChange(pendingTypeChange);
-      setPendingTypeChange(null);
-    }
-  }, [pendingTypeChange, performTypeChange]);
+      // ✅ 有未保存修改时，显示简短 Toast 提示
+      if (hasPendingChanges) {
+        toast("未保存的内容已丢失", {
+          duration: 3000,
+          action: {
+            label: "撤销",
+            onClick: () => {
+              if (previousStateRef.current) {
+                setDiagram({
+                  diagram_type: previousStateRef.current.diagram_type,
+                  diagram_code: previousStateRef.current.diagram_code,
+                });
+                setMessages(previousStateRef.current.messages);
+              }
+            },
+          },
+        });
+      }
+    },
+    [
+      diagram.diagram_type,
+      diagram.diagram_code,
+      messages,
+      hasPendingChanges,
+      setDiagram,
+      setMessages,
+      performRender,
+    ]
+  );
 
-  // 确认切换：创建新会话
-  const handleTypeChangeWithNewSession = useCallback(async () => {
-    if (!pendingTypeChange) return;
-
-    try {
-      // createNewSession 会创建默认 mermaid 会话
-      // performTypeChange 会覆盖为目标类型
-      await createNewSession();
-      await performTypeChange(pendingTypeChange);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "创建会话失败");
-    } finally {
-      setPendingTypeChange(null);
-    }
-  }, [pendingTypeChange, createNewSession, performTypeChange]);
+  // ❌ 删除旧的确认对话框逻辑
 
   // 代码变更处理
-  const handleCodeChange = useCallback((code: string) => {
-    setDiagram({ diagram_code: code });
-  }, [setDiagram]);
+  const handleCodeChange = useCallback(
+    (code: string) => {
+      setDiagram({ diagram_code: code });
+    },
+    [setDiagram]
+  );
 
-  const [pendingUnsavedAction, setPendingUnsavedAction] = useState<
-    | { kind: "typeChange"; type: string }
-    | { kind: "newSession" }
-    | { kind: "loadSession"; id: string }
-    | null
-  >(null);
+  // ❌ 删除 pendingUnsavedAction 状态
 
+  // ✅ 简化的会话切换（Toast 提示）
   const requestNewSession = useCallback(async () => {
     if (hasPendingChanges) {
-      setPendingUnsavedAction({ kind: "newSession" });
+      previousStateRef.current = {
+        diagram_type: diagram.diagram_type,
+        diagram_code: diagram.diagram_code,
+        messages: [...messages],
+      };
+      const oldSessionId = sessionId;
+      await createNewSession();
+      toast.info("已创建新会话，之前的更改未保存", {
+        duration: 5000,
+        action: {
+          label: "保存旧会话",
+          onClick: async () => {
+            if (previousStateRef.current && oldSessionId) {
+              await loadSession(oldSessionId);
+              await saveNow();
+              toast.success("已保存");
+            }
+          },
+        },
+      });
     } else {
       await createNewSession();
     }
-  }, [hasPendingChanges, createNewSession]);
+  }, [hasPendingChanges, diagram, messages, sessionId, createNewSession, loadSession, saveNow]);
 
-  const requestLoadSession = useCallback(async (id: string) => {
-    if (hasPendingChanges) {
-      setPendingUnsavedAction({ kind: "loadSession", id });
-    } else {
-      await loadSession(id);
-    }
-  }, [hasPendingChanges, loadSession]);
-
-  const handleUnsavedProceed = useCallback(async (save: boolean) => {
-    const action = pendingUnsavedAction;
-    if (!action) return;
-    if (save) {
-      await saveNow();
-    }
-    if (action.kind === "newSession") {
-      await createNewSession();
-    } else if (action.kind === "loadSession") {
-      await loadSession(action.id);
-    } else if (action.kind === "typeChange") {
-      proceedTypeChangeCheck(action.type);
-    }
-    setPendingUnsavedAction(null);
-  }, [pendingUnsavedAction, saveNow, createNewSession, loadSession, proceedTypeChangeCheck]);
+  const requestLoadSession = useCallback(
+    async (id: string) => {
+      if (hasPendingChanges) {
+        previousStateRef.current = {
+          diagram_type: diagram.diagram_type,
+          diagram_code: diagram.diagram_code,
+          messages: [...messages],
+        };
+        const oldSessionId = sessionId;
+        await loadSession(id);
+        toast.info("已切换会话，之前的更改未保存", {
+          duration: 5000,
+          action: {
+            label: "保存",
+            onClick: async () => {
+              if (previousStateRef.current && oldSessionId) {
+                await loadSession(oldSessionId);
+                await saveNow();
+                await loadSession(id);
+                toast.success("已保存");
+              }
+            },
+          },
+        });
+      } else {
+        await loadSession(id);
+      }
+    },
+    [hasPendingChanges, diagram, messages, sessionId, loadSession, saveNow]
+  );
 
   // 快捷键：撤销/重做
   useEffect(() => {
@@ -280,26 +352,6 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  // 初始渲染（仅在会话加载完成时触发一次）
-  useEffect(() => {
-    const wasLoading = prevSessionLoadingRef.current;
-    prevSessionLoadingRef.current = isSessionLoading;
-
-    // 仅在从加载中变为加载完成时触发初始渲染
-    if (wasLoading && !isSessionLoading) {
-      if (diagram.diagram_code) {
-        // 使用统一渲染函数
-        performRender(diagram.diagram_type, diagram.diagram_code).finally(() => {
-          // 初始渲染完成，允许 debounce effect 工作
-          initialRenderPendingRef.current = false;
-        });
-      } else {
-        // 没有需要渲染的内容，直接允许 debounce effect 工作
-        initialRenderPendingRef.current = false;
-      }
-    }
-  }, [isSessionLoading, diagram.diagram_code, diagram.diagram_type, performRender]);
-
   // 加载中状态
   if (isSessionLoading) {
     return (
@@ -321,9 +373,9 @@ export default function Home() {
         diagramType={diagram.diagram_type}
         onTypeChange={handleTypeChange}
         onSave={async () => {
-              await saveNow();
-              toast.success("已保存");
-            }}
+          await saveNow();
+          toast.success("已保存");
+        }}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={undo}
@@ -345,32 +397,20 @@ export default function Home() {
         onCodeChange={handleCodeChange}
         svgContent={svgContent}
         errorMessage={errorMessage}
-            isLoading={isLoading}
-            onExport={handleExport}
-            sessionId={sessionId}
-            messages={messages}
-            setMessages={setMessages}
-            onToolResult={handleToolResult}
-            sessions={sessions}
-            onNewSession={requestNewSession}
-            onLoadSession={requestLoadSession}
-            onDeleteSession={deleteSessionById}
-            onRenameSession={renameSession}
-          />
-
-      {/* 弹框组件 */}
-      <TypeChangeDialog
-        pendingType={pendingTypeChange}
-        onConfirm={handleConfirmTypeChange}
-        onNewSession={handleTypeChangeWithNewSession}
-        onCancel={() => setPendingTypeChange(null)}
+        isLoading={isLoading}
+        onExport={handleExport}
+        sessionId={sessionId}
+        messages={messages}
+        setMessages={setMessages}
+        onToolResult={handleToolResult}
+        sessions={sessions}
+        onNewSession={requestNewSession}
+        onLoadSession={requestLoadSession}
+        onDeleteSession={deleteSessionById}
+        onRenameSession={renameSession}
       />
 
-      <UnsavedChangesDialog
-        pendingAction={pendingUnsavedAction}
-        onProceed={handleUnsavedProceed}
-        onCancel={() => setPendingUnsavedAction(null)}
-      />
+      {/* ❌ 删除对话框组件 - 改用 Toast 提示 */}
     </div>
   );
 }

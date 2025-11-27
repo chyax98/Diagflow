@@ -2,29 +2,30 @@
  * IndexedDB 存储层（带 localStorage 降级）
  * 使用 idb-keyval 管理会话持久化，私密模式下降级到 localStorage
  */
-import { createStore, get, set, del } from 'idb-keyval';
-import type { UIMessage } from '@ai-sdk/react';
-import { STORAGE_CONFIG, STORAGE_KEYS } from './constants';
-import { logger, ErrorMessages } from './logger';
-import { StorageError } from './types';
+import { createStore, get, set, del } from "idb-keyval";
+import type { UIMessage } from "@ai-sdk/react";
+import { STORAGE_CONFIG, STORAGE_KEYS } from "./constants";
+import { logger, ErrorMessages } from "./logger";
+import { StorageError } from "./types";
+import { handleError } from "./error-handler";
 
 // 创建专用存储（避免与其他应用冲突）
-const diagflowStore = createStore('diagflow-db', 'diagflow-store');
+const diagflowStore = createStore("diagflow-db", "diagflow-store");
 
 // ============================================================================
 // localStorage 降级辅助函数
 // ============================================================================
 
-const FALLBACK_PREFIX = 'diagflow-fallback-';
+const FALLBACK_PREFIX = "diagflow-fallback-";
 
 /** localStorage 降级：保存会话列表 */
 function saveSessionsToLocalStorage(sessions: Session[]): void {
   try {
     const data: SessionsMetadata = { sessions, version: 1 };
     localStorage.setItem(`${FALLBACK_PREFIX}sessions`, JSON.stringify(data));
-    logger.info('已降级到 localStorage 保存会话列表');
+    logger.info("已降级到 localStorage 保存会话列表");
   } catch (error) {
-    logger.error('localStorage 保存失败', error);
+    logger.error("localStorage 保存失败", error);
     throw new StorageError(ErrorMessages.STORAGE_UNAVAILABLE, error);
   }
 }
@@ -37,7 +38,7 @@ function getSessionsFromLocalStorage(): Session[] {
     const data: SessionsMetadata = JSON.parse(json);
     return data.sessions || [];
   } catch (error) {
-    logger.warn('localStorage 读取失败', { error });
+    logger.warn("localStorage 读取失败", { error });
     return [];
   }
 }
@@ -83,14 +84,14 @@ export async function getSessions(): Promise<Session[]> {
     // 按更新时间降序排序
     return data.sessions.sort((a, b) => b.updatedAt - a.updatedAt);
   } catch (error) {
-    logger.warn('IndexedDB 获取失败，尝试 localStorage 降级', { error });
+    logger.warn("IndexedDB 获取失败，尝试 localStorage 降级", { error });
 
     // 降级到 localStorage
     try {
       const sessions = getSessionsFromLocalStorage();
       return sessions.sort((a, b) => b.updatedAt - a.updatedAt);
     } catch (fallbackError) {
-      logger.error('localStorage 也失败', fallbackError);
+      logger.error("localStorage 也失败", fallbackError);
       return [];
     }
   }
@@ -101,7 +102,7 @@ export async function getSessions(): Promise<Session[]> {
  */
 export async function getSession(id: string): Promise<Session | null> {
   const sessions = await getSessions();
-  return sessions.find(s => s.id === id) || null;
+  return sessions.find((s) => s.id === id) || null;
 }
 
 /**
@@ -111,7 +112,7 @@ export async function getSession(id: string): Promise<Session | null> {
 export async function saveSession(session: Session): Promise<void> {
   try {
     const sessions = await getSessions();
-    const existingIndex = sessions.findIndex(s => s.id === session.id);
+    const existingIndex = sessions.findIndex((s) => s.id === session.id);
 
     if (existingIndex >= 0) {
       // 更新现有会话
@@ -130,13 +131,13 @@ export async function saveSession(session: Session): Promise<void> {
     try {
       await set(STORAGE_KEYS.sessions, { sessions, version: 1 }, diagflowStore);
     } catch (idbError) {
-      logger.warn('IndexedDB 保存失败，降级到 localStorage', { error: idbError });
+      logger.warn("IndexedDB 保存失败，降级到 localStorage", { error: idbError });
 
       // 降级到 localStorage
       saveSessionsToLocalStorage(sessions);
     }
   } catch (error) {
-    logger.error('保存会话失败', error);
+    logger.error("保存会话失败", error);
     throw error;
   }
 }
@@ -147,10 +148,10 @@ export async function saveSession(session: Session): Promise<void> {
 export async function deleteSession(id: string): Promise<void> {
   try {
     const sessions = await getSessions();
-    const filtered = sessions.filter(s => s.id !== id);
+    const filtered = sessions.filter((s) => s.id !== id);
     await set(STORAGE_KEYS.sessions, { sessions: filtered, version: 1 }, diagflowStore);
   } catch (error) {
-    console.error('删除会话失败:', error);
+    handleError(error, { level: "warning", userMessage: "删除会话失败" });
     throw error;
   }
 }
@@ -163,7 +164,7 @@ export async function clearAllSessions(): Promise<void> {
     await del(STORAGE_KEYS.sessions, diagflowStore);
     await del(STORAGE_KEYS.currentSessionId, diagflowStore);
   } catch (error) {
-    console.error('清空会话失败:', error);
+    handleError(error, { level: "warning", userMessage: "清空会话失败" });
     throw error;
   }
 }
@@ -173,9 +174,9 @@ export async function clearAllSessions(): Promise<void> {
  */
 export async function getCurrentSessionId(): Promise<string | null> {
   try {
-    return await get<string>(STORAGE_KEYS.currentSessionId, diagflowStore) || null;
+    return (await get<string>(STORAGE_KEYS.currentSessionId, diagflowStore)) || null;
   } catch (error) {
-    console.error('获取当前会话 ID 失败:', error);
+    handleError(error, { level: "silent", userMessage: "获取当前会话 ID 失败" });
     return null;
   }
 }
@@ -191,7 +192,7 @@ export async function setCurrentSessionId(id: string | null): Promise<void> {
       await del(STORAGE_KEYS.currentSessionId, diagflowStore);
     }
   } catch (error) {
-    console.error('设置当前会话 ID 失败:', error);
+    handleError(error, { level: "warning", userMessage: "设置当前会话 ID 失败" });
   }
 }
 
@@ -201,31 +202,35 @@ export async function setCurrentSessionId(id: string | null): Promise<void> {
 
 /**
  * 生成会话名称（基于图表类型和时间）
+ * 格式：类型简称 月日-时分，例如 "Mermaid 1127-1430"
  */
 export function generateSessionName(diagramType: string): string {
   const typeNames: Record<string, string> = {
-    mermaid: 'Mermaid',
-    plantuml: 'PlantUML',
-    d2: 'D2',
-    dbml: 'DBML',
-    graphviz: 'Graphviz',
-    c4plantuml: 'C4',
-    nomnoml: 'Nomnoml',
-    erd: 'ERD',
-    ditaa: 'Ditaa',
-    svgbob: 'Svgbob',
-    wavedrom: 'WaveDrom',
-    blockdiag: 'BlockDiag',
-    seqdiag: 'SeqDiag',
-    nwdiag: 'NwDiag',
+    mermaid: "Mermaid",
+    plantuml: "PlantUML",
+    d2: "D2",
+    dbml: "DBML",
+    graphviz: "Graphviz",
+    c4plantuml: "C4",
+    nomnoml: "Nomnoml",
+    erd: "ERD",
+    ditaa: "Ditaa",
+    svgbob: "Svgbob",
+    wavedrom: "WaveDrom",
+    blockdiag: "BlockDiag",
+    seqdiag: "SeqDiag",
+    nwdiag: "NwDiag",
   };
 
   const typeName = typeNames[diagramType] || diagramType;
   const date = new Date();
-  const timeStr = date.toLocaleTimeString('zh-CN', {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  
+  // 格式：月日-时分（紧凑格式）
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  const timeStr = `${month}${day}-${hour}${minute}`;
 
   return `${typeName} ${timeStr}`;
 }

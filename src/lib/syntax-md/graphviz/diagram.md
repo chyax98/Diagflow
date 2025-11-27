@@ -21,14 +21,15 @@ use_cases:
 
 节点形状（基础）：
 - 多边形: box矩形, circle圆形, ellipse椭圆, oval卵形, polygon多边形
-- 几何: diamond菱形, triangle三角, invtriangle倒三角, trapezium梯形
-- 特殊: hexagon六边形, octagon八边形, pentagon五边形, star星形
-- 数据: cylinder圆柱, egg蛋形, doublecircle双圆, tripleoctagon三重八边形
-- 箭头: larrow左箭头, rarrow右箭头, Mdiamond粗菱形, Msquare粗方形
+- 几何: diamond菱形, triangle三角, invtriangle倒三角, trapezium梯形, invtrapezium倒梯形
+- 特殊: hexagon六边形, septagon七边形, octagon八边形, pentagon五边形, star星形
+- 数据: cylinder圆柱, egg蛋形, doublecircle双圆, doubleoctagon双八边形, tripleoctagon三重八边形
+- 形状节点: larrow左箭头, rarrow右箭头, Mdiamond粗菱形, Msquare粗方形, Mcircle粗圆
 - 记录: record记录, Mrecord圆角记录（支持|分隔字段）
 - 文件: folder文件夹, tab标签页, note便签, box3d立方体
-- 组件: component组件, assembly装配, promoter启动子, terminator终止子
-- 其他: house房子, parallelogram平行四边形, underline下划线, plaintext纯文本
+- 组件: component组件, assembly装配
+- 生物学: promoter启动子, cds编码序列, terminator终止子, utr非翻译区, primersite引物位点, restrictionsite限制性位点, fivepoverhang五端突出, threepoverhang三端突出, noverhang无突出, signature签名, insulator绝缘子, ribosite核糖体位点, rnastab RNA稳定, proteasesite蛋白酶位点, proteinstab蛋白质稳定, rpromoter反向启动子, lpromoter左启动子
+- 其他: house房子, invhouse倒房子, parallelogram平行四边形, underline下划线, plaintext纯文本, plain简单, rect矩形, rectangle矩形, square正方形, none无
 
 节点属性：
 - 标签: label="文本"（支持\n换行, \l左对齐, \r右对齐）
@@ -42,14 +43,16 @@ use_cases:
 
 边属性：
 - 标签: label="文本", headlabel="头标签", taillabel="尾标签"
-- 箭头形状: arrowhead=normal/vee/diamond/dot/none/tee/box/crow/curve
+- 箭头形状: arrowhead=normal/vee/diamond/dot/none/tee/box/crow/curve/icurve/inv, arrowtail=同arrowhead
 - 箭头方向: dir=forward/back/both/none
+- 箭头大小: arrowsize=1.0（缩放因子）
 - 线条样式: style=solid/dashed/dotted/bold/invis
 - 线条颜色: color="#ff0000"
 - 线条宽度: penwidth=2.0
 - 权重: weight=5（影响布局）
 - 约束: constraint=true/false（是否影响排序）
 - 路径形状: splines=ortho/polyline/curved/line/none
+- 标签装饰: decorate=true（标签跟随边）
 - 其他: tooltip="提示", URL="链接", minlen=1最小长度
 
 布局引擎（engine）：
@@ -85,20 +88,35 @@ use_cases:
 ## 高级语法
 - 全局默认: graph[属性], node[属性], edge[属性]
 - 记录节点: shape=record, label="字段1|字段2|{嵌套1|嵌套2}"
+  * 语法字符: { } 嵌套分组，| 分隔字段，<port> 端口命名
+  * 字面转义: 要显示字面的 { } | < > 字符时用 \{ \} \| \< \>
+  * 端口命名: label="<port1>字段1|<port2>字段2"
 - 端口连接: A:port1 -> B:port2（连接记录节点特定端口）
-- 端口方位: A:n/ne/e/se/s/sw/w/nw/c（指定连接点方位）
+- 端口方位: A:n/ne/e/se/s/sw/w/nw/c/_（指定连接点方位）
 - 同层对齐: {rank=same; A; B; C;}
 - 层级设置: {rank=min/max/source/sink; A;}
-- HTML标签: label=<<TABLE>...</TABLE>>（支持HTML表格）
+- HTML标签: label=<<TABLE>...</TABLE>>（支持HTML表格，需合法XML）
 - 样式组合: style="filled,rounded"
 - 渐变色: fillcolor="#333333:#ffffff"（起始:结束）, gradientangle=90
 - 边装饰: decorate=true（标签跟随边）
+- 箭头修饰符:
+  * o前缀: 开放式箭头（如obox, odiamond）
+  * l/r前缀: 左/右半箭头（如ldiamond, rdiamond）
+  * 组合: lteeoldiamond（从节点向外：左tee + 开放左diamond）
 
 ## DOT语言规则
-- ID命名: 字母/数字/下划线，不以数字开头，特殊字符需引号
-- 字符串: "包含空格或特殊字符"，支持\n\l\r转义
-- 分隔符: 分号;可选，逗号,分隔属性
-- 大小写: 关键字不区分大小写（graph=GRAPH）
+- ID命名规则:
+  * 字母（含扩展ASCII）/数字/下划线，不以数字开头
+  * 数字常量: [-]?(.[0-9]+ | [0-9]+(.[0-9]*)?)
+  * 双引号字符串: "包含空格或特殊字符"
+  * HTML字符串: <...>（用于HTML-like标签）
+  * 关键字作为ID需加引号
+- 字符串转义: \n换行, \l左对齐换行, \r右对齐换行, \"双引号, \\反斜杠
+- 记录节点字面转义: \{ \} \| \< \>（显示字面字符时使用）
+- 字符串连接: "str1" + "str2"（仅适用双引号字符串，不适用HTML字符串）
+- 分隔符: 分号;可选，逗号,分隔属性，空格分隔token
+- 大小写: 关键字不区分大小写（graph=GRAPH=Graph）
+- 注释: 支持 // 单行, /* */ 多行, # 行开头（C预处理器风格）
 
 ## Kroki 限制
 - ✓ 完全支持所有标准节点形状和布局引擎
@@ -123,6 +141,15 @@ use_cases:
 - 记录节点端口连接语法错误
   * ❌ A->B:port1
   * ✓ A -> B:port1
+- 记录节点字面字符未转义
+  * ❌ [shape=record, label="显示{括号}文本"]（花括号会被解析为语法）
+  * ✓ [shape=record, label="显示\{括号\}文本"]（正确显示字面花括号）
+- HTML标签使用引号包裹
+  * ❌ label="<TABLE>...</TABLE>"
+  * ✓ label=<<TABLE>...</TABLE>>
+- 混淆节点形状和箭头形状
+  * 注意：larrow/rarrow 可以作为节点形状（shape=larrow）
+  * inv 只能作为箭头形状（arrowhead=inv），不是节点形状
 
 
 ## 示例

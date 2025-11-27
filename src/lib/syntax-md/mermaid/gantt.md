@@ -46,7 +46,8 @@ use_cases:
 - 任务依赖:
   * 语法: after 任务ID
   * 单依赖: after task1
-  * 多依赖: after task1 task2 task3
+  * 多依赖: after task1 task2 task3（空格分隔）
+  * until 语法: until 任务ID（v10.9.0+，任务持续到指定任务开始）
   * 依赖的任务必须先定义
 
 - 分组（section）:
@@ -55,9 +56,13 @@ use_cases:
   * 可以有多个 section
 
 - 排除日期:
-  * excludes weekends - 排除周末
+  * excludes weekends - 排除周末（周六、周日）
   * excludes YYYY-MM-DD - 排除特定日期
   * 可多次使用
+
+- 周末配置（v11.0.0+）:
+  * weekend friday - 周末为周五和周六
+  * weekend saturday - 周末为周六和周日（默认）
 
 ## 高级语法
 - 今日标记:
@@ -92,26 +97,31 @@ use_cases:
 - ⚠️ 时间跨度建议 ≤2 年
 
 常见错误排查：
-1. 日期格式不一致
+1. 注释语法错误
+   ❌ // 这是注释（错误：Mermaid 不支持 //）
+   ❌ # 这是注释（错误：Mermaid 不支持 #）
+   ✓ %% 这是注释
+
+2. 日期格式不一致
    ❌ dateFormat YYYY-MM-DD
       任务 : 2024/01/01, 7d
    ✓ dateFormat YYYY-MM-DD
       任务 : 2024-01-01, 7d
 
-2. 里程碑持续时间非零
+3. 里程碑持续时间非零
    ❌ 上线 : milestone, 2024-12-31, 1d
    ✓ 上线 : milestone, 2024-12-31, 0d
 
-3. 时间单位有空格
+4. 时间单位有空格
    ❌ 任务 : 2024-01-01, 7 d
    ✓ 任务 : 2024-01-01, 7d
 
-4. 依赖任务未定义
+5. 依赖任务未定义
    ❌ 任务B : after task1, 5d（task1 未定义）
    ✓ 任务A : task1, 2024-01-01, 3d
       任务B : after task1, 5d
 
-5. section 拼写错误
+6. section 拼写错误
    ❌ Section 阶段1
    ✓ section 阶段1
 

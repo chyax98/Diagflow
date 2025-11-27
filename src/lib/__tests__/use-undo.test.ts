@@ -1,16 +1,12 @@
 /**
  * 撤销/重做 Hook 测试
  */
-import { describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useUndo, type UseUndoOptions } from '../use-undo';
-import type { DiagramSnapshot } from '../storage';
+import { describe, it, expect } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { useUndo, type UseUndoOptions } from "../use-undo";
+import type { DiagramSnapshot } from "../storage";
 
-function createSnapshot(
-  code: string,
-  type = 'mermaid',
-  timestamp = Date.now()
-): DiagramSnapshot {
+function createSnapshot(code: string, type = "mermaid", timestamp = Date.now()): DiagramSnapshot {
   return {
     diagram_type: type,
     diagram_code: code,
@@ -19,7 +15,7 @@ function createSnapshot(
 }
 
 function setup(options?: Partial<UseUndoOptions>) {
-  const initialState = createSnapshot('initial code');
+  const initialState = createSnapshot("initial code");
   return renderHook(() =>
     useUndo({
       initialState,
@@ -28,12 +24,12 @@ function setup(options?: Partial<UseUndoOptions>) {
   );
 }
 
-describe('useUndo', () => {
-  describe('初始状态', () => {
-    it('返回初始状态', () => {
+describe("useUndo", () => {
+  describe("初始状态", () => {
+    it("返回初始状态", () => {
       const { result } = setup();
 
-      expect(result.current.state.diagram_code).toBe('initial code');
+      expect(result.current.state.diagram_code).toBe("initial code");
       expect(result.current.canUndo).toBe(false);
       expect(result.current.canRedo).toBe(false);
       expect(result.current.undoCount).toBe(0);
@@ -41,45 +37,45 @@ describe('useUndo', () => {
     });
   });
 
-  describe('set', () => {
-    it('更新当前状态', () => {
+  describe("set", () => {
+    it("更新当前状态", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'new code' });
+        result.current.set({ diagram_code: "new code" });
       });
 
-      expect(result.current.state.diagram_code).toBe('new code');
+      expect(result.current.state.diagram_code).toBe("new code");
     });
 
-    it('保留未更新的字段', () => {
+    it("保留未更新的字段", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'new code' });
+        result.current.set({ diagram_code: "new code" });
       });
 
-      expect(result.current.state.diagram_type).toBe('mermaid');
+      expect(result.current.state.diagram_type).toBe("mermaid");
     });
 
-    it('记录历史到撤销栈', () => {
+    it("记录历史到撤销栈", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'new code' });
+        result.current.set({ diagram_code: "new code" });
       });
 
       expect(result.current.canUndo).toBe(true);
       expect(result.current.undoCount).toBe(1);
     });
 
-    it('清空重做栈', () => {
+    it("清空重做栈", () => {
       const { result } = setup();
 
       // 创建历史
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
       });
 
       // 撤销一次
@@ -91,46 +87,46 @@ describe('useUndo', () => {
 
       // 新操作
       act(() => {
-        result.current.set({ diagram_code: 'code 3' });
+        result.current.set({ diagram_code: "code 3" });
       });
 
       expect(result.current.canRedo).toBe(false);
     });
 
-    it('相同内容不记录历史', () => {
+    it("相同内容不记录历史", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'initial code' }); // 与初始相同
+        result.current.set({ diagram_code: "initial code" }); // 与初始相同
       });
 
       expect(result.current.canUndo).toBe(false);
     });
   });
 
-  describe('undo', () => {
-    it('恢复到上一个状态', () => {
+  describe("undo", () => {
+    it("恢复到上一个状态", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
       });
 
       act(() => {
         result.current.undo();
       });
 
-      expect(result.current.state.diagram_code).toBe('code 1');
+      expect(result.current.state.diagram_code).toBe("code 1");
     });
 
-    it('多次撤销', () => {
+    it("多次撤销", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
-        result.current.set({ diagram_code: 'code 3' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
+        result.current.set({ diagram_code: "code 3" });
       });
 
       act(() => {
@@ -139,15 +135,15 @@ describe('useUndo', () => {
         result.current.undo();
       });
 
-      expect(result.current.state.diagram_code).toBe('initial code');
+      expect(result.current.state.diagram_code).toBe("initial code");
       expect(result.current.canUndo).toBe(false);
     });
 
-    it('撤销后可以重做', () => {
+    it("撤销后可以重做", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
+        result.current.set({ diagram_code: "code 1" });
       });
 
       act(() => {
@@ -158,7 +154,7 @@ describe('useUndo', () => {
       expect(result.current.redoCount).toBe(1);
     });
 
-    it('没有历史时不做任何操作', () => {
+    it("没有历史时不做任何操作", () => {
       const { result } = setup();
 
       const stateBefore = result.current.state;
@@ -171,12 +167,12 @@ describe('useUndo', () => {
     });
   });
 
-  describe('redo', () => {
-    it('重做撤销的操作', () => {
+  describe("redo", () => {
+    it("重做撤销的操作", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
+        result.current.set({ diagram_code: "code 1" });
       });
 
       act(() => {
@@ -187,15 +183,15 @@ describe('useUndo', () => {
         result.current.redo();
       });
 
-      expect(result.current.state.diagram_code).toBe('code 1');
+      expect(result.current.state.diagram_code).toBe("code 1");
     });
 
-    it('多次重做', () => {
+    it("多次重做", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
       });
 
       act(() => {
@@ -208,11 +204,11 @@ describe('useUndo', () => {
         result.current.redo();
       });
 
-      expect(result.current.state.diagram_code).toBe('code 2');
+      expect(result.current.state.diagram_code).toBe("code 2");
       expect(result.current.canRedo).toBe(false);
     });
 
-    it('没有重做历史时不做任何操作', () => {
+    it("没有重做历史时不做任何操作", () => {
       const { result } = setup();
 
       const stateBefore = result.current.state;
@@ -225,35 +221,35 @@ describe('useUndo', () => {
     });
   });
 
-  describe('reset', () => {
-    it('重置到新状态并清空历史', () => {
+  describe("reset", () => {
+    it("重置到新状态并清空历史", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
       });
 
-      const newState = createSnapshot('reset code', 'd2');
+      const newState = createSnapshot("reset code", "d2");
 
       act(() => {
         result.current.reset(newState);
       });
 
-      expect(result.current.state.diagram_code).toBe('reset code');
-      expect(result.current.state.diagram_type).toBe('d2');
+      expect(result.current.state.diagram_code).toBe("reset code");
+      expect(result.current.state.diagram_type).toBe("d2");
       expect(result.current.canUndo).toBe(false);
       expect(result.current.canRedo).toBe(false);
     });
   });
 
-  describe('clearHistory', () => {
-    it('清空历史但保留当前状态', () => {
+  describe("clearHistory", () => {
+    it("清空历史但保留当前状态", () => {
       const { result } = setup();
 
       act(() => {
-        result.current.set({ diagram_code: 'code 1' });
-        result.current.set({ diagram_code: 'code 2' });
+        result.current.set({ diagram_code: "code 1" });
+        result.current.set({ diagram_code: "code 2" });
       });
 
       act(() => {
@@ -264,14 +260,14 @@ describe('useUndo', () => {
         result.current.clearHistory();
       });
 
-      expect(result.current.state.diagram_code).toBe('code 1'); // 当前状态保留
+      expect(result.current.state.diagram_code).toBe("code 1"); // 当前状态保留
       expect(result.current.canUndo).toBe(false);
       expect(result.current.canRedo).toBe(false);
     });
   });
 
-  describe('历史限制', () => {
-    it('撤销栈不超过最大限制', () => {
+  describe("历史限制", () => {
+    it("撤销栈不超过最大限制", () => {
       const { result } = setup();
 
       // 创建超过限制的历史（假设限制是 50）

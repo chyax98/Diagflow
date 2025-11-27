@@ -12,6 +12,7 @@ use_cases:
 
 基础语法:
 - 声明: blockdiag { ... } 或 blockdiag 图名 { ... }
+- 注释: // 单行注释 (C 风格)
 - 节点定义: 节点ID [属性列表]; 如 A [label="开始"];
 - 边定义: 节点A -> 节点B; (有向箭头)
 - 边语法变体: A -> B -> C; (链式), A -> B, C; (分支)
@@ -91,6 +92,10 @@ use_cases:
 - ❌ icon 和 background 图片需要可访问的 URL
 
 ## 常见错误
+- 注释语法错误
+  * ❌ # 这是注释 或 %% 这是注释
+  * ✓ // 这是注释
+
 - 节点ID包含特殊字符未加引号
   * ❌ my-node -> other-node;
   * ✓ "my-node" -> "other-node";

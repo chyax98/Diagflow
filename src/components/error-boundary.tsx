@@ -2,10 +2,10 @@
  * React Error Boundary
  * 捕获组件渲染错误，防止白屏
  */
-'use client';
+"use client";
 
-import { Component, ReactNode } from 'react';
-import { logger } from '@/lib/logger';
+import { Component, ReactNode } from "react";
+import { logger } from "@/lib/logger";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     // 记录错误
-    logger.error('React 组件错误', error, {
+    logger.error("React 组件错误", error, {
       componentStack: errorInfo.componentStack,
     });
 
@@ -100,11 +100,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </p>
 
             {/* 开发环境显示错误详情 */}
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mb-6 p-4 bg-muted rounded-lg">
-                <summary className="cursor-pointer text-sm font-medium mb-2">
-                  错误详情
-                </summary>
+                <summary className="cursor-pointer text-sm font-medium mb-2">错误详情</summary>
                 <div className="text-xs font-mono space-y-2">
                   <div>
                     <strong>错误：</strong> {this.state.error.message}
@@ -116,9 +114,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   )}
                   {this.state.errorInfo?.componentStack && (
                     <details>
-                      <summary className="cursor-pointer text-xs mt-2">
-                        组件栈
-                      </summary>
+                      <summary className="cursor-pointer text-xs mt-2">组件栈</summary>
                       <pre className="overflow-auto max-h-32 text-[10px] bg-background p-2 rounded mt-1">
                         {this.state.errorInfo.componentStack}
                       </pre>

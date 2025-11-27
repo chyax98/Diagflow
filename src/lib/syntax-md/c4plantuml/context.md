@@ -12,7 +12,7 @@ use_cases:
 核心语法要点：
 - 强制包裹: @startuml 和 @enduml（缺少会渲染失败）
 - 强制库引用(最致命错误): !include <C4/C4_Context>，不能为空或错误
-  * 也可使用在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+  * ❌ Kroki 不支持在线 URL include（安全限制）
 
 元素定义：
 - 人员: Person(alias, "名称", "描述", ?sprite, ?tags, ?link)
@@ -25,8 +25,9 @@ use_cases:
 关系定义：
 - 基础关系: Rel(from, to, "描述", ?技术)
 - 反向关系: Rel_Back(from, to, "描述", ?技术)
-- 方向关系: Rel_U/Rel_D/Rel_L/Rel_R (上/下/左/右)
+- 方向关系: Rel_U/Rel_Up (上), Rel_D/Rel_Down (下), Rel_L/Rel_Left (左), Rel_R/Rel_Right (右)
 - 双向关系: BiRel(from, to, "描述", ?技术)
+- 方向双向: BiRel_U/BiRel_D/BiRel_L/BiRel_R
 
 边界定义：
 - 系统边界: System_Boundary(alias, "名称") { ... }
@@ -34,14 +35,15 @@ use_cases:
 - 通用边界: Boundary(alias, "名称", ?type) { ... }
 
 布局选项：
-- 自动布局+图例: LAYOUT_WITH_LEGEND()
-- 方向布局: LAYOUT_TOP_DOWN() / LAYOUT_LEFT_RIGHT()
+- 方向布局: LAYOUT_TOP_DOWN() / LAYOUT_LEFT_RIGHT() / LAYOUT_LANDSCAPE()
 - 显示图例: SHOW_LEGEND()
-- 手绘风格: SHOW_SKETCH_STYLE(?show)
+- 组合使用: 先设置方向布局，再调用 SHOW_LEGEND()
+- 手绘风格: LAYOUT_AS_SKETCH()
 
 高级特性：
 - 标签系统: $tags="tag1+tag2" 用于元素分类
-- 自定义标签: AddElementTag(tagStereo, ?bgColor, ?fontColor, ?borderColor)
+- 自定义标签: AddElementTag(tagStereo, ?bgColor, ?fontColor, ?borderColor, ?shadowing, ?shape, ?sprite, ?techn, ?legendText, ?legendSprite, ?borderStyle, ?borderThickness)
+- 自定义关系标签: AddRelTag(tagStereo, ?textColor, ?lineColor, ?lineStyle, ?sprite, ?techn, ?legendText, ?legendSprite)
 - 添加链接: $link="https://example.com"
 - 添加图标: $sprite="{SpriteName}" 或 img:{File/Url} 或 &{OpenIconic}
 
@@ -74,7 +76,7 @@ Person(admin, "管理员", "系统管理员")
 System(ecommerce, "电商平台", "在线购物核心系统")
 System_Ext(payment, "支付宝", "第三方支付平台")
 System_Ext(logistics, "物流系统", "第三方配送服务")
-SystemDb_Ext(erp, "ERP系统", "企业资源管理")
+SystemDb(erp, "ERP系统", "企业资源管理")
 
 Rel(customer, ecommerce, "浏览商品、下单", "HTTPS")
 Rel(admin, ecommerce, "管理商品、订单", "HTTPS")
@@ -82,7 +84,8 @@ Rel(ecommerce, payment, "处理支付", "REST API/JSON")
 Rel(ecommerce, logistics, "创建配送单", "HTTPS")
 Rel(ecommerce, erp, "同步库存", "SOAP/XML")
 
-LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
 @enduml
 ```
 
@@ -115,7 +118,7 @@ Rel(customer, crm, "提交需求", "Web Portal")
 Rel(finance, bank, "付款对账", "银联接口")
 Rel(crm, email, "发送通知", "SMTP")
 
-LAYOUT_TOP_DOWN()
+LAYOUT_LEFT_RIGHT()
 SHOW_LEGEND()
 @enduml
 ```
@@ -132,7 +135,7 @@ title IoT平台系统上下文（带图标和标签）
 
 AddElementTag("v1.0", $bgColor="#d4f1d4")
 AddElementTag("legacy", $bgColor="#f1d4d4")
-AddRelTag("async", $lineStyle="DashedLine()", $textColor="#ff6655")
+AddRelTag("async", $textColor="#ff6655", $lineColor="", $lineStyle="DashedLine")
 
 Person(user, "设备用户", "操作IoT设备")
 Person(ops, "运维人员", "监控系统健康")

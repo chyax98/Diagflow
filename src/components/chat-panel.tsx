@@ -5,18 +5,19 @@ import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { toast } from "sonner";
 import type { DiagramSnapshot, Session } from "@/lib/storage";
 import { ToolCallResultSchema } from "@/lib/types";
 import { logger } from "@/lib/logger";
+import { handleError } from "@/lib/error-handler";
+import { SessionHistory } from "./session-history";
 
-// 工具调用结果回调
+// 工具调用结果回调（允许 null 值，与 AI 返回的数据兼容）
 export interface ToolCallResult {
   success: boolean;
-  diagram_type?: string;
-  diagram_code?: string;
-  svg_content?: string;
-  error_message?: string;
+  diagram_type?: string | null;
+  diagram_code?: string | null;
+  svg_content?: string | null;
+  error_message?: string | null;
 }
 
 interface ChatPanelProps {
@@ -33,11 +34,14 @@ interface ChatPanelProps {
   onRenameSession: (id: string, name: string) => Promise<void>;
 }
 
-// 示例提示
+// 示例提示（多样化，不限制语言和图表类型）
 const SUGGESTIONS = [
-  "用 Mermaid 生成一个用户登录的流程图",
-  "用 D2 画一个 Web 应用的三层架构图",
-  "用 DBML 设计一个博客系统的数据库",
+  "Draw a microservices architecture diagram",
+  "设计一个电商系统的 ER 图",
+  "Create a CI/CD pipeline flowchart",
+  "画一个状态机：订单从创建到完成的流程",
+  "Show the request flow of OAuth 2.0 authentication",
+  "用 D2 画一个 Kubernetes 集群架构",
 ];
 
 // Memoized Markdown 组件，避免不必要的重渲染
@@ -56,9 +60,7 @@ const MemoizedMarkdown = memo(
           code: ({ children, className }) => {
             const isInline = !className;
             return isInline ? (
-              <code className="bg-muted/70 px-1.5 py-0.5 rounded text-[13px]">
-                {children}
-              </code>
+              <code className="bg-muted/70 px-1.5 py-0.5 rounded text-[13px]">{children}</code>
             ) : (
               <code className={className}>{children}</code>
             );
@@ -71,7 +73,12 @@ const MemoizedMarkdown = memo(
           li: ({ children }) => <li className="mb-1">{children}</li>,
           // 链接
           a: ({ href, children }) => (
-            <a href={href} className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
+            <a
+              href={href}
+              className="text-primary hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {children}
             </a>
           ),
@@ -109,10 +116,7 @@ export function ChatPanel({
   const [input, setInput] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const editInputRef = useRef<HTMLInputElement>(null);
 
   // 使用 ref 存储 diagram 以避免 transport 重新创建
   const diagramRef = useRef(diagram);
@@ -121,6 +125,8 @@ export function ChatPanel({
   }, [diagram]);
 
   // 使用 useMemo 缓存 transport 实例
+  // diagramRef 在 body 回调中访问，不是在渲染时，所以不会导致重新渲染问题
+  /* eslint-disable react-hooks/exhaustive-deps, react-hooks/refs */
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
@@ -135,6 +141,7 @@ export function ChatPanel({
       }),
     []
   );
+  /* eslint-enable react-hooks/exhaustive-deps, react-hooks/refs */
 
   const { messages, sendMessage, status, setMessages, stop } = useChat({
     transport,
@@ -142,30 +149,43 @@ export function ChatPanel({
   });
   const isLoading = status === "streaming" || status === "submitted";
 
-  const lastExternalMessagesRef = useRef(externalMessages);
-  const lastSessionIdRef = useRef<string | null>(sessionId);
-  const isRestoringMessagesRef = useRef(false);
+  // ============================================================================
+  // 消息同步状态管理（简化设计）
+  // ============================================================================
+  // 替换原来的 3 个 ref（lastExternalMessagesRef, lastSessionIdRef, isRestoringMessagesRef）
+  // 使用版本号机制防止竞态条件
 
+  const syncVersionRef = useRef(0); // 同步版本号，每次外部同步时递增
+  const lastSessionIdRef = useRef<string | null>(sessionId); // 上一次的 sessionId
+  const lastExternalMessagesRef = useRef(externalMessages); // 上一次的外部消息
+
+  // 跟踪已处理的工具调用，避免重复处理（会话切换时清空）
+  const processedToolCallsRef = useRef<Set<string>>(new Set());
+
+  // 双向消息同步逻辑：
+  // 1. 外部消息变化（useSession 更新） -> 同步到 useChat
+  // 2. 内部消息变化（AI 生成新消息） -> 同步到 useSession
+  // 3. 会话切换时清空工具调用记录
   useEffect(() => {
     const sessionChanged = lastSessionIdRef.current !== sessionId;
     const externalChanged = lastExternalMessagesRef.current !== externalMessages;
 
-    if (sessionChanged || externalChanged) {
+    // 会话切换：清理已处理工具调用记录
+    if (sessionChanged) {
       lastSessionIdRef.current = sessionId;
+      processedToolCallsRef.current.clear();
+    }
+
+    // 外部消息变化：同步到内部（优先级高）
+    if (sessionChanged || externalChanged) {
       lastExternalMessagesRef.current = externalMessages;
-      isRestoringMessagesRef.current = true;
       setMessages(externalMessages);
+      syncVersionRef.current++; // 递增版本号，防止触发反向同步
       return;
     }
 
-    if (isRestoringMessagesRef.current) {
-      if (messages === externalMessages) {
-        isRestoringMessagesRef.current = false;
-      }
-      return;
-    }
-
-    if (messages !== externalMessages) {
+    // 内部消息变化：同步到外部（AI 生成的新消息）
+    if (messages !== lastExternalMessagesRef.current) {
       lastExternalMessagesRef.current = messages;
       setExternalMessages(messages);
     }
@@ -176,23 +196,30 @@ export function ChatPanel({
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return;
 
-    lastMsg.parts.forEach((part) => {
+    lastMsg.parts.forEach((part, index) => {
+      // 生成唯一标识符
+      const toolCallId = `${lastMsg.id}-${index}`;
+
       if (
         part.type === "tool-validate_and_render" &&
         part.state === "output-available" &&
-        onToolResult
+        onToolResult &&
+        !processedToolCallsRef.current.has(toolCallId)
       ) {
+        // 标记为已处理
+        processedToolCallsRef.current.add(toolCallId);
+
         try {
           // 使用 Zod 验证工具调用结果
           const result = ToolCallResultSchema.parse(part.output);
           onToolResult(result);
         } catch (error) {
           // 验证失败：记录错误并提示用户
-          logger.error('工具调用结果验证失败', error, {
+          logger.error("工具调用结果验证失败", error, {
             part: part.type,
             output: part.output,
           });
-          toast.error('AI 返回的数据格式不正确，请重试');
+          handleError(error, { level: "warning", userMessage: "AI 返回的数据格式不正确，请重试" });
         }
       }
     });
@@ -203,7 +230,6 @@ export function ChatPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  
   const handleSubmit = () => {
     if (input.trim() && !isLoading) {
       sendMessage({ text: input });
@@ -230,7 +256,7 @@ export function ChatPanel({
 
   // 切换工具展开状态
   const toggleToolExpanded = (toolKey: string) => {
-    setExpandedTools(prev => {
+    setExpandedTools((prev) => {
       const next = new Set(prev);
       if (next.has(toolKey)) {
         next.delete(toolKey);
@@ -252,52 +278,6 @@ export function ChatPanel({
     }
   };
 
-  // 格式化时间
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const isYesterday = date.toDateString() === yesterday.toDateString();
-
-    if (isToday) {
-      return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-    } else if (isYesterday) {
-      return "昨天";
-    } else {
-      return date.toLocaleDateString("zh-CN", { month: "short", day: "numeric" });
-    }
-  };
-
-  // 开始编辑会话名称
-  const startEditing = (session: Session) => {
-    setEditingSessionId(session.id);
-    setEditingName(session.name);
-  };
-
-  // 确认重命名
-  const confirmRename = async () => {
-    if (editingSessionId && editingName.trim()) {
-      await onRenameSession(editingSessionId, editingName.trim());
-    }
-    setEditingSessionId(null);
-    setEditingName("");
-  };
-
-  // 取消编辑
-  const cancelEditing = () => {
-    setEditingSessionId(null);
-    setEditingName("");
-  };
-
-  // 自动聚焦编辑输入框
-  useEffect(() => {
-    if (editingSessionId && editInputRef.current) {
-      editInputRef.current.focus();
-      editInputRef.current.select();
-    }
-  }, [editingSessionId]);
 
   return (
     <div className="panel flex h-full flex-col overflow-hidden relative">
@@ -317,8 +297,18 @@ export function ChatPanel({
             }`}
             title="历史对话"
           >
-            <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-[15px] h-[15px]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </button>
 
@@ -328,131 +318,34 @@ export function ChatPanel({
             className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             title="新对话"
           >
-            <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+            <svg
+              className="w-[15px] h-[15px]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 4v16m8-8H4"
+              />
             </svg>
           </button>
         </div>
       </div>
 
       {/* 历史记录覆盖面板 */}
-      {showHistory && (
-        <div className="absolute inset-0 top-[52px] z-50 bg-background/95 backdrop-blur-sm flex flex-col rounded-b-xl overflow-hidden">
-          {/* 面板头部 */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
-            <span className="text-sm font-medium">历史对话</span>
-            <button
-              onClick={() => setShowHistory(false)}
-              className="w-6 h-6 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* 新建对话按钮 */}
-          <div className="px-3 py-2 border-b border-border">
-            <button
-              onClick={handleNewSession}
-              className="w-full px-3 py-2.5 text-sm text-left bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors flex items-center gap-2 font-medium"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              开始新对话
-            </button>
-          </div>
-
-          {/* 会话列表 */}
-          <div className="flex-1 overflow-y-auto">
-            {sessions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
-                <svg className="w-12 h-12 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p className="text-sm">暂无历史对话</p>
-                <p className="text-xs mt-1">开始新对话后会在这里显示</p>
-              </div>
-            ) : (
-              <div className="p-2 space-y-1">
-                {sessions.map((session) => {
-                  const isEditing = editingSessionId === session.id;
-                  return (
-                    <div
-                      key={session.id}
-                      className={`group flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${
-                        session.id === sessionId
-                          ? "bg-primary/10 border border-primary/20"
-                          : "hover:bg-accent border border-transparent"
-                      } ${isEditing ? "" : "cursor-pointer"}`}
-                      onClick={() => !isEditing && handleLoadSession(session.id)}
-                    >
-                      <div className="flex-1 min-w-0">
-                        {isEditing ? (
-                          <input
-                            ref={editInputRef}
-                            type="text"
-                            value={editingName}
-                            onChange={(e) => setEditingName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                confirmRename();
-                              } else if (e.key === "Escape") {
-                                cancelEditing();
-                              }
-                            }}
-                            onBlur={confirmRename}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full px-2 py-1 text-sm bg-background border border-primary rounded outline-none"
-                          />
-                        ) : (
-                          <>
-                            <div className={`text-sm truncate ${session.id === sessionId ? "font-medium" : ""}`}>
-                              {session.name}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {formatTime(session.updatedAt)}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      {!isEditing && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditing(session);
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                            title="重命名"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteSession(session.id);
-                            }}
-                            className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                            title="删除"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <SessionHistory
+        sessions={sessions}
+        currentSessionId={sessionId}
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        onSelect={handleLoadSession}
+        onNew={handleNewSession}
+        onDelete={onDeleteSession}
+        onRename={onRenameSession}
+      />
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto bg-white/30 rounded-b-xl">
@@ -491,127 +384,160 @@ export function ChatPanel({
               return (
                 <div key={m.id} className="space-y-3">
                   {validParts.map((part, index) => {
-                  // 文本消息
-                  if (part.type === "text") {
-                    const isUser = m.role === "user";
-                    return (
-                      <div
-                        key={index}
-                        className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                      >
+                    // 文本消息
+                    if (part.type === "text") {
+                      const isUser = m.role === "user";
+                      return (
                         <div
-                          className={`max-w-[88%] px-4 py-2.5 text-[14px] leading-relaxed ${
-                            isUser ? "message-user" : "message-ai"
-                          }`}
+                          key={index}
+                          className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                         >
-                          {isUser ? (
-                            part.text
-                          ) : (
-                            <MemoizedMarkdown content={part.text} />
+                          <div
+                            className={`max-w-[88%] px-4 py-2.5 text-[14px] leading-relaxed ${
+                              isUser ? "message-user" : "message-ai"
+                            }`}
+                          >
+                            {isUser ? part.text : <MemoizedMarkdown content={part.text} />}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // 工具调用（仅 assistant）
+                    if (m.role === "assistant" && part.type?.startsWith("tool-")) {
+                      const toolPart = part as {
+                        type: string;
+                        state: string;
+                        input?: unknown;
+                        output?: unknown;
+                        errorText?: string;
+                      };
+                      const toolName = toolPart.type.replace("tool-", "");
+                      const toolKey = `${m.id}-${index}`;
+                      const isExpanded = expandedTools.has(toolKey);
+                      const isSuccess =
+                        toolPart.state === "output-available" &&
+                        (toolPart.output as { success?: boolean })?.success;
+                      const isError =
+                        toolPart.state === "output-error" ||
+                        (toolPart.state === "output-available" &&
+                          !(toolPart.output as { success?: boolean })?.success);
+                      const isPending =
+                        toolPart.state === "input-streaming" ||
+                        toolPart.state === "input-available";
+                      const hasDetails = toolPart.input || toolPart.output || toolPart.errorText;
+
+                      return (
+                        <div key={index} className="flex flex-col items-start gap-1">
+                          <button
+                            onClick={() => hasDetails && toggleToolExpanded(toolKey)}
+                            className={`tool-badge ${hasDetails ? "cursor-pointer hover:bg-accent/80" : "cursor-default"}`}
+                          >
+                            {/* 展开图标 */}
+                            {hasDetails && (
+                              <svg
+                                className={`w-3 h-3 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            )}
+                            <span>{toolLabels[toolName] || toolName}</span>
+                            {isPending && (
+                              <svg
+                                className="w-3 h-3 animate-spin text-muted-foreground"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                              >
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                ></circle>
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                              </svg>
+                            )}
+                            {isSuccess && (
+                              <span className="tool-success">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                成功
+                              </span>
+                            )}
+                            {isError && (
+                              <span className="text-destructive flex items-center gap-1 ml-2">
+                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                                失败
+                              </span>
+                            )}
+                          </button>
+
+                          {/* 展开的详情 */}
+                          {isExpanded && hasDetails && (
+                            <div className="w-full max-w-[88%] ml-0 bg-muted/50 rounded-lg p-3 text-xs space-y-2 overflow-hidden">
+                              {toolPart.input !== undefined && toolPart.input !== null && (
+                                <div>
+                                  <div className="text-muted-foreground mb-1 font-medium">
+                                    输入参数
+                                  </div>
+                                  <pre className="bg-background/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px]">
+                                    {formatToolData(toolPart.input)}
+                                  </pre>
+                                </div>
+                              )}
+                              {toolPart.output !== undefined && toolPart.output !== null && (
+                                <div>
+                                  <div className="text-muted-foreground mb-1 font-medium">
+                                    输出结果
+                                  </div>
+                                  <pre className="bg-background/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px] max-h-48 overflow-y-auto">
+                                    {formatToolData(toolPart.output)}
+                                  </pre>
+                                </div>
+                              )}
+                              {toolPart.errorText && (
+                                <div>
+                                  <div className="text-destructive mb-1 font-medium">错误信息</div>
+                                  <pre className="bg-destructive/10 text-destructive rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px]">
+                                    {toolPart.errorText}
+                                  </pre>
+                                </div>
+                              )}
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  }
+                      );
+                    }
 
-                  // 工具调用（仅 assistant）
-                  if (m.role === "assistant" && part.type?.startsWith("tool-")) {
-                    const toolPart = part as {
-                      type: string;
-                      state: string;
-                      input?: unknown;
-                      output?: unknown;
-                      errorText?: string;
-                    };
-                    const toolName = toolPart.type.replace("tool-", "");
-                    const toolKey = `${m.id}-${index}`;
-                    const isExpanded = expandedTools.has(toolKey);
-                    const isSuccess = toolPart.state === "output-available" &&
-                      (toolPart.output as { success?: boolean })?.success;
-                    const isError = toolPart.state === "output-error" ||
-                      (toolPart.state === "output-available" && !(toolPart.output as { success?: boolean })?.success);
-                    const isPending = toolPart.state === "input-streaming" || toolPart.state === "input-available";
-                    const hasDetails = toolPart.input || toolPart.output || toolPart.errorText;
-
-                    return (
-                      <div key={index} className="flex flex-col items-start gap-1">
-                        <button
-                          onClick={() => hasDetails && toggleToolExpanded(toolKey)}
-                          className={`tool-badge ${hasDetails ? "cursor-pointer hover:bg-accent/80" : "cursor-default"}`}
-                        >
-                          {/* 展开图标 */}
-                          {hasDetails && (
-                            <svg
-                              className={`w-3 h-3 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          )}
-                          <span>{toolLabels[toolName] || toolName}</span>
-                          {isPending && (
-                            <svg className="w-3 h-3 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          )}
-                          {isSuccess && (
-                            <span className="tool-success">
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              成功
-                            </span>
-                          )}
-                          {isError && (
-                            <span className="text-destructive flex items-center gap-1 ml-2">
-                              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                              失败
-                            </span>
-                          )}
-                        </button>
-
-                        {/* 展开的详情 */}
-                        {isExpanded && hasDetails && (
-                          <div className="w-full max-w-[88%] ml-0 bg-muted/50 rounded-lg p-3 text-xs space-y-2 overflow-hidden">
-                            {toolPart.input !== undefined && toolPart.input !== null && (
-                              <div>
-                                <div className="text-muted-foreground mb-1 font-medium">输入参数</div>
-                                <pre className="bg-background/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px]">
-                                  {formatToolData(toolPart.input)}
-                                </pre>
-                              </div>
-                            )}
-                            {toolPart.output !== undefined && toolPart.output !== null && (
-                              <div>
-                                <div className="text-muted-foreground mb-1 font-medium">输出结果</div>
-                                <pre className="bg-background/50 rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px] max-h-48 overflow-y-auto">
-                                  {formatToolData(toolPart.output)}
-                                </pre>
-                              </div>
-                            )}
-                            {toolPart.errorText && (
-                              <div>
-                                <div className="text-destructive mb-1 font-medium">错误信息</div>
-                                <pre className="bg-destructive/10 text-destructive rounded p-2 overflow-x-auto whitespace-pre-wrap break-all text-[11px]">
-                                  {toolPart.errorText}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return null;
-                })}
-              </div>
-            );
+                    return null;
+                  })}
+                </div>
+              );
             })
           )}
           <div ref={messagesEndRef} />
@@ -652,7 +578,12 @@ export function ChatPanel({
               className="w-9 h-9 bg-primary hover:bg-primary-hover text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               <svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
               </svg>
             </button>
           )}

@@ -29,6 +29,9 @@ interface WorkspaceProps {
   onRenameSession: (id: string, name: string) => Promise<void>;
 }
 
+// 固定侧边栏宽度 - 必须使用完整的 Tailwind 类名（JIT 编译要求）
+const SIDEBAR_WIDTH_CLASS = "w-[400px]";
+
 export function Workspace({
   diagram,
   onCodeChange,
@@ -49,7 +52,7 @@ export function Workspace({
   return (
     <div className="flex flex-1 gap-3 min-h-0">
       {/* 左侧: 代码编辑器 */}
-      <div className="w-[400px] shrink-0">
+      <div className={`${SIDEBAR_WIDTH_CLASS} shrink-0`}>
         <CodeEditor
           code={diagram.diagram_code}
           diagramType={diagram.diagram_type}
@@ -71,7 +74,7 @@ export function Workspace({
       </div>
 
       {/* 右侧: AI 聊天面板 */}
-      <div className="w-[400px] shrink-0">
+      <div className={`${SIDEBAR_WIDTH_CLASS} shrink-0`}>
         <ChatPanel
           sessionId={sessionId}
           diagram={diagram}

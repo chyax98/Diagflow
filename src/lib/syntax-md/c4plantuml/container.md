@@ -12,14 +12,14 @@ use_cases:
 核心语法要点：
 - 强制包裹: @startuml 和 @enduml
 - 强制库引用: !include <C4/C4_Container>
-  * 在线版本: !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
   * 注意: Container库继承Context，可定义Person和System
+  * ❌ Kroki 不支持在线 URL include（安全限制）
 
 容器元素定义：
-- 通用容器: Container(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link)
+- 通用容器: Container(alias, "名称", "技术栈", "描述", ?sprite, ?tags, ?link, ?baseShape)
 - 数据库容器: ContainerDb(alias, "数据库名", "数据库类型", "描述", ?sprite, ?tags, ?link)
 - 消息队列容器: ContainerQueue(alias, "队列名", "队列技术", "描述", ?sprite, ?tags, ?link)
-- 外部容器: Container_Ext(alias, "外部服务", "技术", "描述", ?sprite, ?tags, ?link)
+- 外部容器: Container_Ext(alias, "外部服务", "技术", "描述", ?sprite, ?tags, ?link, ?baseShape)
 - 外部数据库: ContainerDb_Ext(alias, "外部DB", "类型", "描述", ?sprite, ?tags, ?link)
 - 外部队列: ContainerQueue_Ext(alias, "外部MQ", "技术", "描述", ?sprite, ?tags, ?link)
 
@@ -39,8 +39,10 @@ use_cases:
 - 异步消息: 使用Rel_Back表示回调或消息响应
 
 布局和样式：
-- LAYOUT_WITH_LEGEND() - 自动布局+图例
+- LAYOUT_TOP_DOWN() - 上下布局（默认）
+- LAYOUT_LEFT_RIGHT() - 左右布局
 - LAYOUT_LANDSCAPE() - 横向布局（适合宽屏）
+- SHOW_LEGEND() - 显示图例
 - HIDE_STEREOTYPE() - 隐藏<<container>>标签
 - SetDefaultLegendEntries("人员\n系统\n容器") - 自定义图例
 
@@ -114,7 +116,8 @@ Rel(order_svc, payment, "支付请求", "REST API")
 
 Rel(admin, webapp, "管理后台", "HTTPS")
 
-LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+SHOW_LEGEND()
 @enduml
 ```
 
@@ -171,7 +174,7 @@ SHOW_LEGEND()
 
 title Serverless架构容器图
 
-AddContainerTag("lambda", $sprite="lambda", $legendText="Lambda函数")
+AddContainerTag("lambda", $bgColor="", $fontColor="", $borderColor="", $shadowing="", $shape="", $sprite="lambda", $legendText="Lambda函数")
 AddContainerTag("managed", $bgColor="#e1f5e1", $legendText="托管服务")
 
 Person(user, "用户")

@@ -35,9 +35,7 @@ export function UnsavedChangesDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>未保存的更改</AlertDialogTitle>
-          <AlertDialogDescription>
-            检测到未保存的更改。是否保存后继续操作？
-          </AlertDialogDescription>
+          <AlertDialogDescription>检测到未保存的更改。是否保存后继续操作？</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>
@@ -47,9 +45,7 @@ export function UnsavedChangesDialog({
           >
             不保存继续
           </AlertDialogAction>
-          <AlertDialogAction onClick={() => onProceed(true)}>
-            保存后继续
-          </AlertDialogAction>
+          <AlertDialogAction onClick={() => onProceed(true)}>保存后继续</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -1,4 +1,0 @@
-language: nomnoml
-description: 简化的手绘风格UML图表语言，支持类图、组件图、流程图等多种UML风格
-docs_url: https://nomnoml.com/
-version: 1.0.0

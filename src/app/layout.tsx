@@ -6,7 +6,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DiagFlow - AI 驱动的智能图表生成器",
-  description: "通过自然语言对话快速生成流程图、时序图、架构图等 15+ 种专业图表。支持 Mermaid、PlantUML、D2 等多种引擎。",
+  description:
+    "通过自然语言对话快速生成流程图、时序图、架构图等 15+ 种专业图表。支持 Mermaid、PlantUML、D2 等多种引擎。",
   keywords: ["AI图表", "流程图生成", "Mermaid", "PlantUML", "架构图", "时序图"],
   icons: {
     icon: "/favicon.svg",
@@ -26,9 +27,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={"antialiased"}>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        <ErrorBoundary>{children}</ErrorBoundary>
         <Toaster position="top-center" richColors />
       </body>
     </html>

@@ -3,6 +3,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
 import { EditorView } from "@codemirror/view";
 import { toast } from "sonner";
+import { handleError } from "@/lib/error-handler";
 
 interface CodeEditorProps {
   code: string;
@@ -14,12 +15,12 @@ interface CodeEditorProps {
 
 export function CodeEditor({
   code,
-  diagramType,
+  diagramType: _diagramType,
   onChange,
   readOnly = false,
-  isLoading = false,
+  isLoading: _isLoading = false,
 }: CodeEditorProps) {
-  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [showLineNumbers, setShowLineNumbers] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
   const getLanguageExtension = () => {
@@ -33,8 +34,7 @@ export function CodeEditor({
       setTimeout(() => setCopySuccess(false), 2000);
       toast.success("代码已复制到剪贴板");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "复制失败";
-      toast.error(message);
+      handleError(error, { level: "warning", userMessage: "复制失败" });
     }
   };
 
@@ -59,8 +59,18 @@ export function CodeEditor({
             }`}
             title="切换行号"
           >
-            <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            <svg
+              className="w-[15px] h-[15px]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+              />
             </svg>
           </button>
 
@@ -72,12 +82,32 @@ export function CodeEditor({
             title="复制代码"
           >
             {copySuccess ? (
-              <svg className="w-[15px] h-[15px] text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+              <svg
+                className="w-[15px] h-[15px] text-success"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
             ) : (
-              <svg className="w-[15px] h-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <svg
+                className="w-[15px] h-[15px]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
               </svg>
             )}
           </button>
@@ -90,10 +120,7 @@ export function CodeEditor({
           value={code}
           height="100%"
           theme="light"
-          extensions={[
-            ...getLanguageExtension(),
-            EditorView.lineWrapping,
-          ]}
+          extensions={[...getLanguageExtension(), EditorView.lineWrapping]}
           onChange={(value) => {
             if (!readOnly) {
               onChange(value);

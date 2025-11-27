@@ -1,19 +1,19 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // ============================================================================
 // Agent State（已废弃，保留以兼容旧代码）
 // ============================================================================
 
 export type AgentState = {
-    diagram_type: string;
-    diagram_name: string;
-    diagram_code: string;
-    svg_content: string;
-    error_message: string | null;
-    is_loading: boolean;
-    retry_count: number;
-    last_modified: number;
-}
+  diagram_type: string;
+  diagram_name: string;
+  diagram_code: string;
+  svg_content: string;
+  error_message: string | null;
+  is_loading: boolean;
+  retry_count: number;
+  last_modified: number;
+};
 
 // ============================================================================
 // Chat Message Schema（AI SDK 消息格式）
@@ -23,7 +23,7 @@ export type AgentState = {
  * 文本内容 Part
  */
 export const TextPartSchema = z.object({
-  type: z.literal('text'),
+  type: z.literal("text"),
   text: z.string(),
 });
 
@@ -31,7 +31,7 @@ export const TextPartSchema = z.object({
  * 工具调用 Part（用户消息中）
  */
 export const ToolCallPartSchema = z.object({
-  type: z.literal('tool-call'),
+  type: z.literal("tool-call"),
   toolCallId: z.string(),
   toolName: z.string(),
   args: z.record(z.string(), z.unknown()),
@@ -41,7 +41,7 @@ export const ToolCallPartSchema = z.object({
  * 工具结果 Part（助手消息中）
  */
 export const ToolResultPartSchema = z.object({
-  type: z.literal('tool-result'),
+  type: z.literal("tool-result"),
   toolCallId: z.string(),
   toolName: z.string(),
   result: z.unknown(),
@@ -62,11 +62,13 @@ export const MessagePartSchema = z.union([
  */
 export const ChatMessageSchema = z.object({
   id: z.string().optional(),
-  role: z.enum(['user', 'assistant', 'system', 'tool']),
-  content: z.union([
-    z.string(), // 简单文本消息
-    z.array(MessagePartSchema), // 多 part 消息
-  ]).optional(),
+  role: z.enum(["user", "assistant", "system", "tool"]),
+  content: z
+    .union([
+      z.string(), // 简单文本消息
+      z.array(MessagePartSchema), // 多 part 消息
+    ])
+    .optional(),
   parts: z.array(MessagePartSchema).optional(), // AI SDK 使用 parts
   createdAt: z.union([z.date(), z.string()]).optional(), // 支持字符串日期
 });
@@ -92,7 +94,7 @@ export type CurrentDiagram = z.infer<typeof CurrentDiagramSchema>;
  * Chat API 请求体
  */
 export const ChatRequestSchema = z.object({
-  messages: z.array(ChatMessageSchema).min(1, '消息列表不能为空'),
+  messages: z.array(ChatMessageSchema).min(1, "消息列表不能为空"),
   currentDiagram: CurrentDiagramSchema.optional(),
 });
 
@@ -104,15 +106,32 @@ export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 
 /**
  * 工具调用结果（validate_and_render 返回）
+ *
+ * 优化后的格式：
+ * - 成功：只返回 diagram_type 和 diagram_code（不含 SVG，节省 99%+ token）
+ * - 失败：返回结构化错误信息（error 对象）
+ *
+ * 使用 nullish() 允许 null、undefined 和缺失值，兼容旧格式
  */
 export const ToolCallResultSchema = z.object({
   success: z.boolean(),
-  diagram_type: z.string().optional(),
-  diagram_code: z.string().optional(),
-  svg_content: z.string().optional(),
-  error_message: z.string().nullable().optional(),
-  code_length: z.number().optional(),
-  svg_length: z.number().optional(),
+  diagram_type: z.string().nullish(),
+  diagram_code: z.string().nullish(),
+  // 以下字段已废弃（仅为向后兼容保留）
+  svg_content: z.string().nullish(),
+  error_message: z.string().nullish(),
+  code_length: z.number().nullish(),
+  svg_length: z.number().nullish(),
+  // 新增字段：结构化错误（用于失败情况）
+  error: z.object({
+    message: z.string(),
+    line: z.number().optional(),
+    context: z.object({
+      before: z.array(z.string()),
+      error_line: z.string(),
+      after: z.array(z.string()),
+    }).optional(),
+  }).nullish(),
 });
 
 export type ToolCallResult = z.infer<typeof ToolCallResultSchema>;
@@ -153,7 +172,7 @@ export class DiagFlowError extends Error {
     public readonly cause?: unknown
   ) {
     super(message);
-    this.name = 'DiagFlowError';
+    this.name = "DiagFlowError";
   }
 }
 
@@ -162,8 +181,8 @@ export class DiagFlowError extends Error {
  */
 export class NetworkError extends DiagFlowError {
   constructor(message: string, cause?: unknown) {
-    super(message, 'NETWORK_ERROR', cause);
-    this.name = 'NetworkError';
+    super(message, "NETWORK_ERROR", cause);
+    this.name = "NetworkError";
   }
 }
 
@@ -172,8 +191,8 @@ export class NetworkError extends DiagFlowError {
  */
 export class RenderError extends DiagFlowError {
   constructor(message: string, cause?: unknown) {
-    super(message, 'RENDER_ERROR', cause);
-    this.name = 'RenderError';
+    super(message, "RENDER_ERROR", cause);
+    this.name = "RenderError";
   }
 }
 
@@ -182,8 +201,8 @@ export class RenderError extends DiagFlowError {
  */
 export class StorageError extends DiagFlowError {
   constructor(message: string, cause?: unknown) {
-    super(message, 'STORAGE_ERROR', cause);
-    this.name = 'StorageError';
+    super(message, "STORAGE_ERROR", cause);
+    this.name = "StorageError";
   }
 }
 
@@ -192,7 +211,7 @@ export class StorageError extends DiagFlowError {
  */
 export class ValidationError extends DiagFlowError {
   constructor(message: string, cause?: unknown) {
-    super(message, 'VALIDATION_ERROR', cause);
-    this.name = 'ValidationError';
+    super(message, "VALIDATION_ERROR", cause);
+    this.name = "ValidationError";
   }
 }

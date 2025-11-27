@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { renderKroki, KrokiRenderError, KrokiTimeoutError } from '@/lib/kroki';
+import { NextRequest, NextResponse } from "next/server";
+import { renderKroki, KrokiRenderError, KrokiTimeoutError } from "@/lib/kroki";
 
 /**
  * Next.js API Route：Kroki 渲染代理
@@ -22,10 +22,7 @@ export async function POST(
     const code = await request.text();
 
     if (!code) {
-      return NextResponse.json(
-        { error: "图表代码不能为空" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "图表代码不能为空" }, { status: 400 });
     }
 
     // 使用统一的 Kroki 渲染函数
@@ -34,8 +31,8 @@ export async function POST(
     return new NextResponse(result.content, {
       status: 200,
       headers: {
-        'Content-Type': result.contentType,
-        'Cache-Control': 'public, max-age=3600',
+        "Content-Type": result.contentType,
+        "Cache-Control": "public, max-age=3600",
       },
     });
   } catch (error) {
@@ -50,9 +47,6 @@ export async function POST(
       status = 400;
     }
 
-    return NextResponse.json(
-      { error: message },
-      { status }
-    );
+    return NextResponse.json({ error: message }, { status });
   }
 }

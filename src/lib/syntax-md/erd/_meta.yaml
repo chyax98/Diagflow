@@ -1,4 +1,0 @@
-language: erd
-description: 简洁的ER图语言，基于Graphviz渲染，用于数据库实体关系建模
-docs_url: https://github.com/BurntSushi/erd
-version: 1.0.0

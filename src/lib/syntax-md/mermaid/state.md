@@ -40,6 +40,7 @@ use_cases:
 
 - 并发状态:
   * 使用 -- 分隔并发区域（两个短横线）
+  * 也称为 Fork/Join 或平行状态
   * 语法:
     state 并发状态 {
         [*] --> 任务A
@@ -96,25 +97,30 @@ use_cases:
 - ⚠️ 避免过深嵌套
 
 常见错误排查：
-1. 版本声明错误
+1. 注释语法错误
+   ❌ // 这是注释（错误：Mermaid 不支持 //）
+   ❌ # 这是注释（错误：Mermaid 不支持 #）
+   ✓ %% 这是注释
+
+2. 版本声明错误
    ❌ stateDiagram
    ✓ stateDiagram-v2
 
-2. 并发分隔符错误
+3. 并发分隔符错误
    ❌ state 并发 { A --- B }（三个短横）
    ✓ state 并发 { A -- B }（两个短横）
 
-3. 选择节点无分支
+4. 选择节点无分支
    ❌ state check <<choice>>（没有分支）
    ✓ state check <<choice>>
       check --> A: 条件1
       check --> B: 条件2
 
-4. 嵌套状态未闭合
+5. 嵌套状态未闭合
    ❌ state 处理中 { ... （缺少闭合括号）
    ✓ state 处理中 { ... }
 
-5. 使用保留字作状态名
+6. 使用保留字作状态名
    ❌ state --> note
    ✓ state "state" as st
       st --> note_state

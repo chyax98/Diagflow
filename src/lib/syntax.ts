@@ -3,17 +3,10 @@
  * 直接从 Markdown 文件加载语法数据
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, readdirSync, existsSync } from "fs";
+import { join } from "path";
 
 // 类型定义
-interface SyntaxMeta {
-  language: string;
-  description: string;
-  docs_url: string;
-  version: string;
-}
-
 interface DiagramType {
   description: string;
   use_cases: string[];
@@ -21,27 +14,25 @@ interface DiagramType {
   examples: string[];
 }
 
-interface SyntaxData {
-  meta: SyntaxMeta;
-  types: Record<string, DiagramType>;
-}
+// SyntaxData 只包含 types，不再需要 meta
+type SyntaxData = Record<string, DiagramType>;
 
 // 语法目录路径
-const SYNTAX_DIR = join(process.cwd(), 'src/lib/syntax-md');
+const SYNTAX_DIR = join(process.cwd(), "src/lib/syntax-md");
 
 /**
  * 解析简单 YAML（无需外部依赖）
  */
 function parseYaml(content: string): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  const lines = content.trim().split('\n');
+  const lines = content.trim().split("\n");
 
-  let currentKey = '';
+  let currentKey = "";
   let currentArray: string[] = [];
   let inArray = false;
 
   for (const line of lines) {
-    if (line.startsWith('  - ')) {
+    if (line.startsWith("  - ")) {
       currentArray.push(line.slice(4).trim());
       continue;
     }
@@ -95,27 +86,27 @@ function parseFrontmatter(content: string): {
  */
 function extractExamples(markdown: string, engine: string): string[] {
   const langAliases: Record<string, string[]> = {
-    mermaid: ['mermaid'],
-    plantuml: ['plantuml'],
-    d2: ['d2'],
-    dbml: ['dbml'],
-    graphviz: ['dot', 'graphviz'],
-    c4plantuml: ['plantuml', 'c4plantuml'],
-    nomnoml: ['nomnoml'],
-    erd: ['erd'],
-    ditaa: ['ditaa'],
-    svgbob: ['svgbob'],
-    seqdiag: ['seqdiag'],
-    nwdiag: ['nwdiag'],
-    blockdiag: ['blockdiag'],
-    wavedrom: ['json', 'wavedrom'],
+    mermaid: ["mermaid"],
+    plantuml: ["plantuml"],
+    d2: ["d2"],
+    dbml: ["dbml"],
+    graphviz: ["dot", "graphviz"],
+    c4plantuml: ["plantuml", "c4plantuml"],
+    nomnoml: ["nomnoml"],
+    erd: ["erd"],
+    ditaa: ["ditaa"],
+    svgbob: ["svgbob"],
+    seqdiag: ["seqdiag"],
+    nwdiag: ["nwdiag"],
+    blockdiag: ["blockdiag"],
+    wavedrom: ["json", "wavedrom"],
   };
 
   const aliases = langAliases[engine] || [engine];
   const examples: string[] = [];
 
   for (const lang of aliases) {
-    const regex = new RegExp(`\`\`\`${lang}\\n([\\s\\S]*?)\`\`\``, 'g');
+    const regex = new RegExp(`\`\`\`${lang}\\n([\\s\\S]*?)\`\`\``, "g");
     let match;
     while ((match = regex.exec(markdown)) !== null) {
       examples.push(match[1].trim());
@@ -143,20 +134,20 @@ function loadEngine(engine: string): SyntaxData | null {
     return null;
   }
 
-  const metaPath = join(engineDir, '_meta.yaml');
-  if (!existsSync(metaPath)) {
+  // 检查是否有 .md 文件（排除 CLAUDE.md 等非语法文件）
+  const files = readdirSync(engineDir).filter(
+    (f) => f.endsWith(".md") && !f.startsWith("_") && f !== "CLAUDE.md"
+  );
+
+  if (files.length === 0) {
     return null;
   }
 
-  const metaContent = readFileSync(metaPath, 'utf8');
-  const meta = parseYaml(metaContent) as unknown as SyntaxMeta;
-
-  const types: Record<string, DiagramType> = {};
-  const files = readdirSync(engineDir).filter((f) => f.endsWith('.md'));
+  const types: SyntaxData = {};
 
   for (const file of files) {
     const filePath = join(engineDir, file);
-    const content = readFileSync(filePath, 'utf8');
+    const content = readFileSync(filePath, "utf8");
     const { data, body } = parseFrontmatter(content);
 
     const typeName = data.type as string;
@@ -170,7 +161,7 @@ function loadEngine(engine: string): SyntaxData | null {
     };
   }
 
-  return { meta, types };
+  return Object.keys(types).length > 0 ? types : null;
 }
 
 /**
@@ -190,10 +181,11 @@ function loadAllSyntax(): Record<string, SyntaxData> {
     return result;
   }
 
-  const engines = readdirSync(SYNTAX_DIR).filter((f) => {
-    const enginePath = join(SYNTAX_DIR, f);
-    return existsSync(join(enginePath, '_meta.yaml'));
-  });
+  // 扫描所有子目录，检查是否包含 .md 文件
+  const entries = readdirSync(SYNTAX_DIR, { withFileTypes: true });
+  const engines = entries
+    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+    .map((e) => e.name);
 
   for (const engine of engines) {
     const data = loadEngine(engine);
@@ -240,10 +232,10 @@ export function getDiagramSyntax(engine: string, diagramType: string) {
   }
 
   const typeLower = diagramType.toLowerCase();
-  const typeData = engineData.types[typeLower];
+  const typeData = engineData[typeLower];
 
   if (!typeData) {
-    const supportedTypes = Object.keys(engineData.types);
+    const supportedTypes = Object.keys(engineData);
     return {
       error: `引擎 ${engine} 不支持图表类型: ${diagramType}`,
       supported_types: supportedTypes,
@@ -279,19 +271,26 @@ export function listDiagramTypes(engine: string): string[] {
     return [];
   }
 
-  return Object.keys(engineData.types);
+  return Object.keys(engineData);
 }
 
 /**
- * 获取引擎的元数据信息
+ * 生成引擎选择策略文本（用于 SYSTEM_PROMPT）
+ * 简洁的 engine/type 映射表
  */
-export function getEngineInfo(engine: string) {
-  const engineLower = engine.toLowerCase();
-  const engineData = loadAllSyntax()[engineLower];
+export function generateEngineSelectionText(): string {
+  const syntax = loadAllSyntax();
+  const lines: string[] = [];
 
-  if (!engineData) {
-    return null;
+  lines.push("| engine | type | 说明 | 典型场景 |");
+  lines.push("|--------|------|------|----------|");
+
+  for (const [engine, types] of Object.entries(syntax)) {
+    for (const [type, info] of Object.entries(types)) {
+      const scenes = info.use_cases.slice(0, 2).join("、");
+      lines.push(`| ${engine} | ${type} | ${info.description} | ${scenes} |`);
+    }
   }
 
-  return engineData.meta;
+  return lines.join("\n");
 }

@@ -90,13 +90,24 @@
   }
 
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   @keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(0.9); }
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(0.9);
+    }
   }
 }
 
@@ -107,12 +118,15 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-body, html {
+body,
+html {
   height: 100%;
 }
 
@@ -147,12 +161,16 @@ body, html {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
   transition: box-shadow 0.25s ease;
 }
 
 .panel:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.08),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
 }
 
 .panel-header {
@@ -170,7 +188,9 @@ body, html {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
 }
 
 /* ========================================
@@ -371,7 +391,15 @@ body, html {
    代码高亮
    ======================================== */
 
-.code-keyword { color: #af52de; }
-.code-string { color: #c41a16; }
-.code-bracket { color: #1c00cf; }
-.code-comment { color: #86868b; }
+.code-keyword {
+  color: #af52de;
+}
+.code-string {
+  color: #c41a16;
+}
+.code-bracket {
+  color: #1c00cf;
+}
+.code-comment {
+  color: #86868b;
+}

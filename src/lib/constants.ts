@@ -8,14 +8,14 @@ export const STORAGE_CONFIG = {
 
 // IndexedDB 存储键
 export const STORAGE_KEYS = {
-  sessions: 'diagflow_sessions',
-  currentSessionId: 'diagflow_current_session_id',
+  sessions: "diagflow_sessions",
+  currentSessionId: "diagflow_current_session_id",
 } as const;
 
 // 默认图表模板
 export const DEFAULT_TEMPLATES: Record<string, string> = {
-  mermaid: 'flowchart TD\n  A[开始] --> B[结束]',
-  plantuml: '@startuml\nAlice -> Bob: Hello\nBob --> Alice: Hi\n@enduml',
+  mermaid: "flowchart TD\n  A[开始] --> B[结束]",
+  plantuml: "@startuml\nAlice -> Bob: Hello\nBob --> Alice: Hi\n@enduml",
   d2: `用户: {shape: person}
 Web界面: {
   shape: rectangle
@@ -28,8 +28,8 @@ Web界面: {
 
 用户 -> Web界面: "访问"
 Web界面 -> 数据库: "查询"`,
-  dbml: 'Table users {\n  id integer [pk]\n  name varchar\n}',
-  graphviz: 'digraph G {\n  A -> B\n}',
+  dbml: "Table users {\n  id integer [pk]\n  name varchar\n}",
+  graphviz: "digraph G {\n  A -> B\n}",
   c4plantuml: `@startuml
 !include <C4/C4_Context>
 
@@ -40,11 +40,16 @@ Rel(user, system, "使用", "HTTPS")
 
 LAYOUT_WITH_LEGEND()
 @enduml`,
-  nomnoml: '[Hello] -> [World]',
-  erd: '[Person]\n*name',
-  ditaa: `+--------+   +-------+
-|  开始  |-->|  结束  |
-+--------+   +-------+`,
+  nomnoml: "[Hello] -> [World]",
+  erd: "[Person]\n*name",
+  ditaa: `+--------+   +---------+   +-------+
+| Start  |-->| Process |-->|  End  |
++--------+   +---------+   +-------+
+                 |
+                 v
+            +---------+
+            | Storage |
+            +---------+`,
   svgbob: `  .---.
  /     \\
 +  Box  +
@@ -59,18 +64,22 @@ LAYOUT_WITH_LEGEND()
   B -> D;
 }`,
   seqdiag: `seqdiag {
-  客户端 -> 服务器 [label = "请求"];
-  客户端 <-- 服务器 [label = "响应"];
+  browser -> webserver [label = "GET /index.html"];
+  browser <-- webserver [label = "200 OK"];
+  browser -> webserver [label = "POST /api/login"];
+  browser <-- webserver [label = "JWT token"];
 }`,
   nwdiag: `nwdiag {
   network dmz {
     address = "210.1.1.0/24";
-    webserver [address = ".10", description = "Web服务器"];
+    webserver [address = ".10"];
+    firewall [address = ".1"];
   }
   network internal {
     address = "172.16.0.0/24";
-    webserver [address = ".1", description = "Web服务器"];
-    database [address = ".100", description = "数据库"];
+    webserver [address = ".1"];
+    database [address = ".100"];
+    cache [address = ".50"];
   }
 }`,
 };

@@ -1,4 +1,0 @@
-language: graphviz
-description: 强大的图可视化工具，支持复杂的图布局算法
-docs_url: https://graphviz.org/documentation/
-version: 1.0.0
