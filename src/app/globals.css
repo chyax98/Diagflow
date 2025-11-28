@@ -403,3 +403,17 @@ html {
 .code-comment {
   color: #86868b;
 }
+
+/* ========================================
+   SVG foreignObject 文本裁剪修复
+   Mermaid 生成的 SVG 中 foreignObject 宽度计算不准确
+   ======================================== */
+
+svg foreignObject {
+  overflow: visible !important;
+}
+
+svg foreignObject > div {
+  overflow: visible !important;
+  white-space: nowrap !important;
+}

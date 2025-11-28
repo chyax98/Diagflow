@@ -27,7 +27,7 @@ docker compose up -d --build
 ```env
 OPENAI_API_KEY=sk-your-api-key
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=kimi-k2-thinking
 NEXT_PUBLIC_KROKI_BASE_URL=https://kroki.io
 PORT=3000
 ```

@@ -1,22 +1,14 @@
 "use client";
 
-import type { ExportCapability } from "@/lib/kroki";
-
-type ExportFormat = "svg" | "png" | "png-opaque" | "jpeg" | "pdf";
-
-interface ExportControlsProps {
-  exportCapability: ExportCapability;
-  onExport: (format: ExportFormat) => void;
-  svgContent: string;
+interface ToolbarStatusProps {
+  onSave: () => void;
   hasPendingChanges: boolean;
 }
 
-export function ExportControls({
-  exportCapability,
-  onExport,
-  svgContent,
+export function ToolbarStatus({
+  onSave,
   hasPendingChanges,
-}: ExportControlsProps) {
+}: ToolbarStatusProps) {
   return (
     <div className="flex items-center gap-3">
       {/* AI 状态指示器 */}
@@ -27,41 +19,15 @@ export function ExportControls({
 
       <div className="w-px h-6 bg-border mx-1" />
 
-      {/* 导出按钮 - 根据引擎能力显示 */}
+      {/* 保存按钮 */}
       <button
-        onClick={() => onExport("svg")}
-        disabled={!svgContent}
-        className="px-3.5 py-1.5 text-[13px] font-medium bg-secondary hover:bg-secondary-hover rounded-lg transition-colors disabled:opacity-40"
+        onClick={onSave}
+        disabled={!hasPendingChanges}
+        className="px-3.5 py-1.5 text-[13px] font-medium bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors disabled:opacity-40"
+        title="保存会话"
       >
-        SVG
+        保存
       </button>
-      {exportCapability.png && (
-        <button
-          onClick={() => onExport("png")}
-          disabled={!svgContent}
-          className="px-3.5 py-1.5 text-[13px] font-medium bg-secondary hover:bg-secondary-hover rounded-lg transition-colors disabled:opacity-40"
-        >
-          PNG
-        </button>
-      )}
-      {exportCapability.pdf && (
-        <button
-          onClick={() => onExport("pdf")}
-          disabled={!svgContent}
-          className="px-3.5 py-1.5 text-[13px] font-medium bg-secondary hover:bg-secondary-hover rounded-lg transition-colors disabled:opacity-40"
-        >
-          PDF
-        </button>
-      )}
-      {exportCapability.jpeg && (
-        <button
-          onClick={() => onExport("jpeg")}
-          disabled={!svgContent}
-          className="px-3.5 py-1.5 text-[13px] font-medium bg-secondary hover:bg-secondary-hover rounded-lg transition-colors disabled:opacity-40"
-        >
-          JPEG
-        </button>
-      )}
     </div>
   );
 }

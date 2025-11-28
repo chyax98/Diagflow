@@ -40,46 +40,8 @@ Rel(user, system, "使用", "HTTPS")
 
 LAYOUT_WITH_LEGEND()
 @enduml`,
-  nomnoml: "[Hello] -> [World]",
-  erd: "[Person]\n*name",
-  ditaa: `+--------+   +---------+   +-------+
-| Start  |-->| Process |-->|  End  |
-+--------+   +---------+   +-------+
-                 |
-                 v
-            +---------+
-            | Storage |
-            +---------+`,
-  svgbob: `  .---.
- /     \\
-+  Box  +
- \\     /
-  '---'`,
   wavedrom: `{ "signal": [
   { "name": "clk", "wave": "p......" },
   { "name": "data", "wave": "x.345x.", "data": ["A", "B", "C"] }
 ]}`,
-  blockdiag: `blockdiag {
-  A -> B -> C;
-  B -> D;
-}`,
-  seqdiag: `seqdiag {
-  browser -> webserver [label = "GET /index.html"];
-  browser <-- webserver [label = "200 OK"];
-  browser -> webserver [label = "POST /api/login"];
-  browser <-- webserver [label = "JWT token"];
-}`,
-  nwdiag: `nwdiag {
-  network dmz {
-    address = "210.1.1.0/24";
-    webserver [address = ".10"];
-    firewall [address = ".1"];
-  }
-  network internal {
-    address = "172.16.0.0/24";
-    webserver [address = ".1"];
-    database [address = ".100"];
-    cache [address = ".50"];
-  }
-}`,
 };

@@ -14,7 +14,7 @@
 - 🤖 AI 对话生成图表
 - ✏️ 实时预览和编辑
 - 📤 多格式导出（SVG/PNG/PDF/JPEG）
-- 📊 支持 15+ 图表引擎
+- 📊 支持多种图表引擎（Mermaid、PlantUML、D2、Graphviz、DBML、C4、WaveDrom）
 
 ## 快速开始
 
@@ -32,10 +32,10 @@ pnpm dev
 ```env
 OPENAI_API_KEY=sk-your-api-key
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=kimi-k2-thinking
 ```
 
-支持 Kimi、OpenRouter、OpenAI 等兼容 API。
+支持 Kimi、OpenRouter、OpenAI 等兼容 API。详见 `.env.example`。
 
 ## 部署
 

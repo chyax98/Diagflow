@@ -10,6 +10,7 @@ import { ToolCallResultSchema } from "@/lib/types";
 import { logger } from "@/lib/logger";
 import { handleError } from "@/lib/error-handler";
 import { SessionHistory } from "./session-history";
+import { APP_CONFIG } from "@/config/app";
 
 // 工具调用结果回调（允许 null 值，与 AI 返回的数据兼容）
 export interface ToolCallResult {
@@ -34,14 +35,17 @@ interface ChatPanelProps {
   onRenameSession: (id: string, name: string) => Promise<void>;
 }
 
-// 示例提示（多样化，不限制语言和图表类型）
+// 引导示例：从简单到复杂，覆盖常见场景和图表类型
 const SUGGESTIONS = [
-  "Draw a microservices architecture diagram",
-  "设计一个电商系统的 ER 图",
-  "Create a CI/CD pipeline flowchart",
-  "画一个状态机：订单从创建到完成的流程",
-  "Show the request flow of OAuth 2.0 authentication",
-  "用 D2 画一个 Kubernetes 集群架构",
+  "画一个用户注册登录的流程图",
+  "前后端交互的时序图：用户下单到支付完成",
+  "博客系统的数据库 ER 图",
+  "React 核心概念思维导图",
+  "微服务电商系统架构图",
+  "订单状态机：从创建到完成的所有状态",
+  "项目开发排期甘特图",
+  "设计模式：观察者模式的类图",
+  "公司发展历程时间线",
 ];
 
 // Memoized Markdown 组件，避免不必要的重渲染
@@ -252,6 +256,7 @@ export function ChatPanel({
     get_diagram_syntax: "查询语法",
     validate_and_render: "渲染图表",
     get_current_diagram: "获取当前图表",
+    edit_diagram_code: "修改代码",
   };
 
   // 切换工具展开状态
@@ -547,10 +552,14 @@ export function ChatPanel({
       {/* Input */}
       <div className="p-4 glass-subtle rounded-b-xl">
         <div className="chat-input-wrapper">
-          <input
-            type="text"
+          <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // 自动调整高度
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && input.trim() && !isLoading) {
                 e.preventDefault();
@@ -559,12 +568,14 @@ export function ChatPanel({
             }}
             placeholder="描述你想要的图表..."
             disabled={isLoading}
-            className="flex-1 py-2 text-[14px] border-none outline-none bg-transparent"
+            rows={1}
+            maxLength={APP_CONFIG.input.MAX_LENGTH}
+            className="flex-1 py-2 text-[14px] border-none outline-none bg-transparent resize-none min-h-[36px] max-h-[120px]"
           />
           {isLoading ? (
             <button
               onClick={stop}
-              className="w-9 h-9 bg-destructive hover:bg-destructive/90 text-white rounded-full flex items-center justify-center transition-all shrink-0"
+              className="w-9 h-9 bg-destructive hover:bg-destructive/90 text-white rounded-full flex items-center justify-center transition-all shrink-0 self-end"
               title="停止生成"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -575,7 +586,7 @@ export function ChatPanel({
             <button
               onClick={handleSubmit}
               disabled={!input.trim()}
-              className="w-9 h-9 bg-primary hover:bg-primary-hover text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="w-9 h-9 bg-primary hover:bg-primary-hover text-white rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 self-end"
             >
               <svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -589,7 +600,7 @@ export function ChatPanel({
           )}
         </div>
         <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
-          Enter 发送 | 支持 15 种图表引擎
+          Enter 发送 · Shift+Enter 换行
         </p>
       </div>
     </div>

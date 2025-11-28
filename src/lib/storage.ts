@@ -212,14 +212,7 @@ export function generateSessionName(diagramType: string): string {
     dbml: "DBML",
     graphviz: "Graphviz",
     c4plantuml: "C4",
-    nomnoml: "Nomnoml",
-    erd: "ERD",
-    ditaa: "Ditaa",
-    svgbob: "Svgbob",
     wavedrom: "WaveDrom",
-    blockdiag: "BlockDiag",
-    seqdiag: "SeqDiag",
-    nwdiag: "NwDiag",
   };
 
   const typeName = typeNames[diagramType] || diagramType;

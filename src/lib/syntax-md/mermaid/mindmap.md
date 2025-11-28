@@ -89,7 +89,7 @@ use_cases:
 
 ## Kroki 限制
 - ✓ 支持所有节点形状
-- ✓ 支持图标（Font Awesome）
+- ❌ 不支持图标语法：`::icon(fa fa-xxx)` 会报 "Parse error"
 - ⚠️ 总节点建议 ≤50 个
 - ⚠️ 层级建议 ≤5 层
 - ⚠️ 节点文本 ≤30 字符

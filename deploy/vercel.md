@@ -9,7 +9,7 @@
 ```env
 OPENAI_API_KEY=sk-your-api-key
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=kimi-k2-thinking
 ```
 
 ### API 配置示例

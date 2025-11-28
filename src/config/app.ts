@@ -22,6 +22,10 @@ export function getAppConfig() {
       TOOLBAR_HEIGHT: 52,
       MESSAGE_MAX_WIDTH: '88%',
     },
+    input: {
+      // 聊天输入框最大字符数（默认 4 万字，约对应 32K tokens）
+      MAX_LENGTH: parseNumber(process.env.NEXT_PUBLIC_INPUT_MAX_LENGTH, 40000),
+    },
     timing: {
       DEBOUNCE_MS: parseNumber(process.env.NEXT_PUBLIC_DEBOUNCE_MS, 500),
       REQUEST_TIMEOUT: parseNumber(process.env.NEXT_PUBLIC_REQUEST_TIMEOUT, 60000),

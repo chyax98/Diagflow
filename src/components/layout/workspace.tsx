@@ -6,6 +6,12 @@ import { ChatPanel, type ToolCallResult } from "@/components/chat-panel";
 import type { DiagramSnapshot, Session } from "@/lib/storage";
 import type { UIMessage } from "@ai-sdk/react";
 
+interface ExportCapability {
+  png: boolean;
+  pdf: boolean;
+  jpeg: boolean;
+}
+
 interface WorkspaceProps {
   // 图表相关
   diagram: DiagramSnapshot;
@@ -14,6 +20,7 @@ interface WorkspaceProps {
   errorMessage: string | null;
   isLoading: boolean;
   onExport: (format: "svg" | "png" | "png-opaque" | "jpeg" | "pdf") => void;
+  exportCapability: ExportCapability;
 
   // 会话相关
   sessionId: string | null;
@@ -39,6 +46,7 @@ export function Workspace({
   errorMessage,
   isLoading,
   onExport,
+  exportCapability,
   sessionId,
   messages,
   setMessages,
@@ -70,6 +78,7 @@ export function Workspace({
           isLoading={isLoading}
           error={errorMessage}
           onExport={onExport}
+          exportCapability={exportCapability}
         />
       </div>
 

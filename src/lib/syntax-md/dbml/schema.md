@@ -72,6 +72,9 @@ use_cases:
 - 其他: uuid, xml, enum
 
 Kroki 限制（重要）：
+- ❌ 不支持中文标识符：表名、字段名、分组名必须使用英文字母、数字、下划线
+- ❌ 不支持 Ref 长格式：不能使用 Ref { ... } 语法块，只能使用内联 ref 或 Ref: 简写
+- ❌ 不支持复合外键：不能使用 Ref: (a,b) > (c,d) 语法，只能单字段引用
 - 节点数建议 ≤ 50（过多影响可读性）
 - 不支持 TablePartial、Check 约束等新特性（DBML 官方支持，但 Kroki 解析器未实现）
 - 不支持字段级 check 约束: age int [check: `age >= 18`]

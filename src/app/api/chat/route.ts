@@ -47,90 +47,99 @@ function getModel() {
 // 动态生成引擎选择策略
 const ENGINE_SELECTION = generateEngineSelectionText();
 
-const SYSTEM_PROMPT = `你是专业图表生成助手，帮助用户将需求转化为可视化图表。
+const SYSTEM_PROMPT = `<role>
+图表生成 Agent。将用户需求转化为可视化图表，通过工具调用完成渲染验证。
+</role>
 
-## 支持的引擎
+<workflow>
+执行 Thought-Action-Observation 循环：
 
+1. Thought: 分析需求，确定图表类型和引擎
+2. Action: get_diagram_syntax 查询语法规则
+3. Observation: 获得语法和示例
+4. Thought: 根据语法生成代码
+5. Action: validate_and_render 渲染验证
+6. Observation: 检查结果
+7. 成功则回复用户；失败则分析错误，修正后重试
+</workflow>
+
+<tools>
+get_diagram_syntax(engine, type)
+- 用途: 获取语法规则、示例、Kroki 限制
+- 时机: 生成代码前必须调用
+
+validate_and_render(engine, code?)
+- 用途: 渲染代码到页面
+- code 可选: 不传时自动使用待渲染的代码
+- 时机: 新建图表 或 edit_diagram_code 之后
+
+get_current_diagram()
+- 用途: 获取当前页面上的图表
+- 时机: 修改现有图表前
+
+edit_diagram_code(search, replace)
+- 用途: 局部修改代码（只替换，不验证）
+- 要求: search 精确匹配
+- 可多次调用，最后统一 validate_and_render
+</tools>
+
+<engines>
 ${ENGINE_SELECTION}
+</engines>
 
-## 工具说明
+<examples>
+Q: 画一个用户登录流程图
 
-**get_diagram_syntax(engine, type)**
-查询指定引擎的语法规则、示例代码和常见错误。生成代码前必须调用。
+Thought: 流程图需求，Mermaid flowchart 适合，先查语法
+Action: get_diagram_syntax("mermaid", "flowchart")
+Observation: [语法规则和示例]
 
-**validate_and_render(engine, code)**
-将完整的图表代码提交渲染。成功返回渲染结果，失败返回错误信息（含行号）。
+Thought: 根据语法生成登录流程代码
+Action: validate_and_render("mermaid", "flowchart TD...")
+Observation: success=true
 
-**get_current_diagram()**
-获取用户当前正在编辑的图表（引擎类型、代码内容、是否有错误）。
+Response: 已生成登录流程图，包含输入验证、登录判断和结果分支。
 
-**edit_diagram_code(search, replace)**
-在当前图表代码中查找 search 字符串，替换为 replace。要求 search 精确匹配，替换后自动验证语法。
+---
+Q: 把这个节点改成蓝色
 
-## 思考流程
+Thought: 样式小改动，用 edit_diagram_code
+Action: get_current_diagram()
+Observation: [当前 mermaid 代码]
 
-### 第一步：理解用户需求
+Thought: 添加 style 定义
+Action: edit_diagram_code("flowchart TD", "flowchart TD\\n  style A fill:#0066cc")
+Observation: success=true
 
-分析用户输入，提取关键信息：
-- 用户想要什么类型的图？（流程图/架构图/时序图/ER图/状态图...）
-- 图表包含哪些元素？（节点、连接、层级、分组...）
-- 有没有特殊要求？（样式、布局、导出格式...）
-- 是新建图表还是修改现有图表？
+Response: 已将节点颜色改为蓝色。
 
-如果需求不明确，先向用户确认关键信息，不要猜测。
+---
+Q: 渲染失败处理（多处错误）
 
-### 第二步：选择合适的引擎
+Thought: 渲染失败，分析错误信息，发现多处问题
+Observation: error line 5, 8: invalid syntax
 
-根据需求特点匹配引擎：
-- 流程图/状态图/时序图 → Mermaid（通用，语法简单）
-- 现代架构图/美观样式 → D2（支持样式定制）
-- UML 规范图/复杂时序 → PlantUML（功能全面）
-- 数据库 ER 图 → DBML 或 ERD
-- C4 架构模型 → C4PlantUML
-- 网络拓扑图 → Graphviz 或 NwDiag
-- 手绘风格 → Excalidraw
-- ASCII 艺术 → Ditaa 或 Svgbob
+Thought: 先修复第 5 行
+Action: edit_diagram_code("[错误代码1]", "[修正代码1]")
+Observation: success=true
 
-用户明确指定引擎时，直接使用指定的引擎。
+Thought: 再修复第 8 行
+Action: edit_diagram_code("[错误代码2]", "[修正代码2]")
+Observation: success=true
 
-### 第三步：查询语法规则
+Thought: 修改完成，统一验证渲染
+Action: validate_and_render("mermaid")
+Observation: success=true
 
-调用 get_diagram_syntax(engine, type) 获取：
-- 完整的语法规则
-- 可用的语法特性
-- 示例代码（重要参考）
-- Kroki 限制（不支持的特性）
-- 常见错误和解决方案
+Response: 已修复语法错误并完成渲染。
+</examples>
 
-严格遵守语法规则，只使用明确支持的特性。
-
-### 第四步：生成并渲染
-
-**新建图表：**
-根据语法规则和示例，生成完整代码，调用 validate_and_render 渲染验证。
-
-**修改图表：**
-先调用 get_current_diagram 获取当前代码，然后：
-- 小范围修改（改文本/颜色/单个节点）→ edit_diagram_code
-- 大范围修改（结构重构/换引擎）→ validate_and_render 重新生成
-
-### 第五步：处理渲染结果
-
-**渲染成功：**
-向用户简要说明图表内容，不输出代码（除非用户要求）。
-
-**渲染失败：**
-1. 仔细阅读错误信息，定位问题行
-2. 对照语法规则分析原因
-3. 使用 edit_diagram_code 修复具体错误，或 validate_and_render 重新生成
-4. 最多重试 3 次
-
-## 注意事项
-
-- 渲染成功才算任务完成
+<constraints>
+- 渲染成功才算完成，失败需分析重试
 - 代码默认不输出，用户要求时才展示
-- 遇到 "Could not parse input" 错误，检查是否使用了不支持的语法特性
-`.trim();
+- 需求不明确时先询问
+- 严格遵守语法规则，只用支持的特性
+</constraints>`.trim();
 
 // 流式响应最大时长（秒）
 // 注意：这是 Next.js segment config，必须是静态值，不能使用运行时配置
@@ -169,6 +178,12 @@ export async function POST(req: Request) {
     }
 
     const { messages, currentDiagram } = validationResult.data;
+
+    // 待验证的图表代码（AI 工作期间的中间状态）
+    // - validate_and_render 失败时存入
+    // - edit_diagram_code 优先从这里读取
+    // - validate_and_render 成功时清空
+    let pendingDiagram: { diagram_type: string; diagram_code: string } | null = null;
 
     // 创建 Langfuse trace（如果启用）
     const traceId = nanoid();
@@ -336,30 +351,44 @@ export async function POST(req: Request) {
 
         // 工具 2: 验证并渲染图表
         validate_and_render: {
-          description: "验证图表代码语法并渲染。成功返回代码信息，失败返回结构化错误。",
+          description:
+            "验证图表代码并渲染到页面。不传 code 时自动使用上次编辑的代码（适用于 edit_diagram_code 之后）。",
           inputSchema: z.object({
             engine: z.string().describe("图表引擎"),
-            code: z.string().describe("图表源代码"),
+            code: z.string().optional().describe("图表代码，不传则使用待渲染的代码"),
           }),
-          execute: async ({ engine, code }) => {
+          execute: async ({ engine, code: inputCode }) => {
             toolCallCount++;
             const spanStartTime = Date.now();
+
+            // 确定要渲染的代码：优先使用传入的 code，否则使用 pendingDiagram
+            const code = inputCode || pendingDiagram?.diagram_code;
+            if (!code) {
+              return {
+                success: false as const,
+                error: { message: "无代码可渲染，请先生成或编辑代码" },
+              };
+            }
 
             // 记录工具调用到 Langfuse（记录完整代码）
             const span = trace?.span({
               name: `validate_and_render-${toolCallCount}`,
               input: {
                 engine,
-                code, // 完整代码，关键！
+                code,
                 code_length: code.length,
                 code_lines: code.split("\n").length,
                 callNumber: toolCallCount,
+                source: inputCode ? "input" : "pending",
               },
             });
 
             try {
               // 调用渲染验证（但不返回 SVG）
               await renderDiagramServer(engine, code);
+
+              // 成功：清空 pending 状态
+              pendingDiagram = null;
 
               // 成功：返回必要信息（不含 SVG）
               const result = {
@@ -382,6 +411,9 @@ export async function POST(req: Request) {
 
             } catch (e) {
               const errorMessage = e instanceof Error ? e.message : String(e);
+
+              // 失败：存入 pending 状态，供 edit_diagram_code 使用
+              pendingDiagram = { diagram_type: engine, diagram_code: code };
 
               // 分析错误类型
               const errorType = errorMessage.includes("Parse error")
@@ -478,9 +510,10 @@ export async function POST(req: Request) {
           },
         },
 
-        // 工具 4: 增量编辑图表代码
+        // 工具 4: 增量编辑图表代码（只替换，不验证）
         edit_diagram_code: {
-          description: `增量编辑当前图表代码。查找 search 内容并替换为 replace，编辑后自动验证语法。`,
+          description:
+            "增量编辑图表代码（只替换，不验证）。可多次调用，最后统一调用 validate_and_render 验证渲染。",
 
           inputSchema: z.object({
             search: z.string().describe("要查找的代码片段（精确匹配）"),
@@ -503,8 +536,9 @@ export async function POST(req: Request) {
               },
             });
 
-            // 获取当前图表代码
-            if (!currentDiagram?.diagram_code) {
+            // 获取图表代码：优先从 pending 读取（首次渲染失败的情况），否则从 currentDiagram 读取
+            const sourceDiagram = pendingDiagram || currentDiagram;
+            if (!sourceDiagram?.diagram_code) {
               const result = {
                 success: false,
                 error: "无当前图表，请先生成图表",
@@ -521,7 +555,8 @@ export async function POST(req: Request) {
               return result;
             }
 
-            const code = currentDiagram.diagram_code;
+            const code = sourceDiagram.diagram_code;
+            const diagramType = sourceDiagram.diagram_type;
 
             // 查找匹配（精确匹配）
             const searchNormalized = search.trim();
@@ -564,80 +599,31 @@ export async function POST(req: Request) {
               return result;
             }
 
-            // 执行替换
+            // 执行替换（不验证，统一由 validate_and_render 验证）
             const newCode = code.replace(searchNormalized, replace.trim());
 
-            // 验证语法（调用 Kroki 渲染）
-            try {
-              await renderDiagramServer(currentDiagram.diagram_type, newCode);
+            // 更新 pending 状态
+            pendingDiagram = { diagram_type: diagramType, diagram_code: newCode };
 
-              const result = {
+            const result = {
+              success: true,
+              message: "代码已修改，请调用 validate_and_render 验证渲染",
+            };
+
+            // 记录成功
+            span?.end({
+              output: {
                 success: true,
-                new_code: newCode,
-                message: "代码已成功修改并验证",
-              };
+                code_length_before: code.length,
+                code_length_after: newCode.length,
+              },
+              metadata: {
+                duration: Date.now() - spanStartTime,
+                engine: diagramType,
+              },
+            });
 
-              // 记录成功
-              span?.end({
-                output: {
-                  success: true,
-                  code_length_before: code.length,
-                  code_length_after: newCode.length,
-                  token_saved_estimate: code.length * 2 - (search.length + replace.length),
-                },
-                metadata: {
-                  duration: Date.now() - spanStartTime,
-                  engine: currentDiagram.diagram_type,
-                },
-              });
-
-              return result;
-            } catch (e) {
-              const errorMessage = e instanceof Error ? e.message : String(e);
-
-              const result = {
-                success: false,
-                error: "修改后的代码语法错误",
-                syntax_error: errorMessage,
-                attempted_code: newCode,
-              };
-
-              // 🔴 编辑后渲染失败埋点
-              trace?.event({
-                name: "render-error",
-                level: "ERROR",
-                input: {
-                  diagram_type: currentDiagram.diagram_type,
-                  diagram_code: newCode,
-                  code_lines: newCode.split("\n").length,
-                  edit_operation: { search, replace },
-                },
-                output: {
-                  error_type: "edit_syntax_error",
-                  error_message: errorMessage,
-                },
-                metadata: {
-                  attemptNumber: toolCallCount,
-                  duration: Date.now() - spanStartTime,
-                },
-              });
-
-              // 记录失败的完整上下文
-              span?.end({
-                output: {
-                  success: false,
-                  error: errorMessage,
-                  attempted_code: newCode,
-                },
-                metadata: {
-                  duration: Date.now() - spanStartTime,
-                  engine: currentDiagram.diagram_type,
-                },
-                level: "ERROR",
-              });
-
-              return result;
-            }
+            return result;
           },
         },
       },

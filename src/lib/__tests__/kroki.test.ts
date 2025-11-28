@@ -130,12 +130,12 @@ describe("Kroki 客户端模块", () => {
       });
       mockFetch(mockResponse);
 
-      const result = await exportPngOpaque("blockdiag", "blockdiag { A -> B }");
+      const result = await exportPngOpaque("mermaid", "flowchart TD\nA-->B");
 
       expect(result).toBeInstanceOf(Blob);
       expect(result.type).toBe("image/png");
       expect(global.fetch).toHaveBeenCalledWith(
-        "/api/render/blockdiag/png",
+        "/api/render/mermaid/png",
         expect.objectContaining({
           method: "POST",
           headers: expect.objectContaining({

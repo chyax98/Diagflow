@@ -68,6 +68,12 @@ use_cases:
 - CQRS: Command Handler <-> Query Handler
 - 事件驱动: Event Publisher -> Event Bus -> Event Handler
 
+## Kroki 限制
+- ❌ 不支持 Component_Boundary：Kroki 无法渲染边界语法，会报 "Syntax Error"
+- ❌ 不支持 Container_Boundary：同样的边界限制
+- ✅ 支持基础元素：Component, ComponentDb, ComponentQueue, Rel 等
+- 替代方案：使用 PlantUML 原生 package/rectangle 语法实现分组
+
 ## 常见错误
 - 组件粒度过细（类级别）或过粗（模块级别）
 - 循环依赖（A->B->A）

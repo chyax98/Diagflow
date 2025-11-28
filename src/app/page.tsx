@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { MainToolbar } from "@/components/layout/main-toolbar";
-import { ExportControls } from "@/components/layout/export-controls";
+import { ToolbarStatus } from "@/components/layout/export-controls";
 import { Workspace } from "@/components/layout/workspace";
 // ❌ 删除对话框导入 - 改用 Toast
 import { type ToolCallResult } from "@/components/chat-panel";
@@ -281,7 +281,7 @@ export default function Home() {
       const oldSessionId = sessionId;
       await createNewSession();
       toast.info("已创建新会话，之前的更改未保存", {
-        duration: 5000,
+        duration: 3000,
         action: {
           label: "保存旧会话",
           onClick: async () => {
@@ -309,7 +309,7 @@ export default function Home() {
         const oldSessionId = sessionId;
         await loadSession(id);
         toast.info("已切换会话，之前的更改未保存", {
-          duration: 5000,
+          duration: 3000,
           action: {
             label: "保存",
             onClick: async () => {
@@ -372,21 +372,17 @@ export default function Home() {
       <MainToolbar
         diagramType={diagram.diagram_type}
         onTypeChange={handleTypeChange}
-        onSave={async () => {
-          await saveNow();
-          toast.success("已保存");
-        }}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
         isLoading={isLoading}
-        hasPendingChanges={hasPendingChanges}
       >
-        <ExportControls
-          exportCapability={exportCapability}
-          onExport={handleExport}
-          svgContent={svgContent}
+        <ToolbarStatus
+          onSave={async () => {
+            await saveNow();
+            toast.success("已保存");
+          }}
           hasPendingChanges={hasPendingChanges}
         />
       </MainToolbar>
@@ -399,6 +395,7 @@ export default function Home() {
         errorMessage={errorMessage}
         isLoading={isLoading}
         onExport={handleExport}
+        exportCapability={exportCapability}
         sessionId={sessionId}
         messages={messages}
         setMessages={setMessages}

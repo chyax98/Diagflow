@@ -53,49 +53,18 @@ export interface ExportCapability {
  *
  * 数据来源：https://kroki.io/ 官方支持表格
  * 更新时间：2025-11
- *
- * 注意：白底 PNG (no-transparency) 仅 BlockDiag 系列支持
  */
 export const EXPORT_CAPABILITIES: Record<string, ExportCapability> = {
-  // BlockDiag 系列 - png, svg, pdf + 白底 PNG
-  blockdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-  seqdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-  actdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-  nwdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-  packetdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-  rackdiag: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: true },
-
   // 完整格式支持 - png, svg, jpeg, pdf
   graphviz: { svg: true, png: true, pdf: true, jpeg: true, pngOpaque: false },
-  erd: { svg: true, png: true, pdf: true, jpeg: true, pngOpaque: false },
   plantuml: { svg: true, png: true, pdf: true, jpeg: true, pngOpaque: false },
   c4plantuml: { svg: true, png: true, pdf: true, jpeg: true, pngOpaque: false },
 
   // png + svg
   mermaid: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
-  ditaa: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
-  wireviz: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
-  umlet: { svg: true, png: true, pdf: false, jpeg: true, pngOpaque: false },
-  vega: { svg: true, png: true, pdf: false, jpeg: true, pngOpaque: false },
-  vegalite: { svg: true, png: true, pdf: false, jpeg: true, pngOpaque: false },
-  tikz: { svg: true, png: true, pdf: true, jpeg: true, pngOpaque: false },
-
-  // 仅 svg
-  nomnoml: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  svgbob: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  excalidraw: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  pikchr: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  symbolator: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  bytefield: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-  bpmn: { svg: true, png: false, pdf: false, jpeg: false, pngOpaque: false },
-
-  // 仅 png (特殊)
   d2: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
   dbml: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
   wavedrom: { svg: true, png: true, pdf: false, jpeg: false, pngOpaque: false },
-
-  // Structurizr - 特殊格式
-  structurizr: { svg: true, png: true, pdf: true, jpeg: false, pngOpaque: false },
 };
 
 /**
@@ -265,7 +234,7 @@ export async function exportPng(diagramType: string, code: string): Promise<Blob
 
 /**
  * 导出 PNG（白色背景）
- * 注意：只有 BlockDiag 系列支持 no-transparency 参数
+ * 注意：大部分引擎不支持白底 PNG，检查 EXPORT_CAPABILITIES.pngOpaque
  */
 export async function exportPngOpaque(diagramType: string, code: string): Promise<Blob> {
   const response = await krokiRequestClient(`${diagramType}/png`, code, {

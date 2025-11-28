@@ -17,21 +17,38 @@ const BACKGROUND_OPTIONS: { value: PreviewBackground; label: string }[] = [
   { value: "blueprint", label: "蓝图" },
 ];
 
+interface ExportCapability {
+  png: boolean;
+  pdf: boolean;
+  jpeg: boolean;
+}
+
 interface SvgPreviewProps {
   svg: string;
   diagramType?: string;
   isLoading?: boolean;
   error?: string | null;
   onExport?: (format: "svg" | "png" | "png-opaque" | "jpeg" | "pdf") => void;
+  exportCapability?: ExportCapability;
 }
 
 export function SvgPreview({
   svg,
-  diagramType: _diagramType = "mermaid",
+  diagramType = "mermaid",
   isLoading = false,
   error = null,
-  onExport: _onExport,
+  onExport,
+  exportCapability = { png: true, pdf: true, jpeg: true },
 }: SvgPreviewProps) {
+  // Mermaid 使用 inline 渲染（解决 foreignObject 裁剪问题）
+  // 其他引擎使用 img 标签（更稳定）
+  const usesInlineRendering = diagramType === "mermaid";
+
+  // 将 SVG 转换为 data URI（非 Mermaid 引擎使用）
+  const svgDataUri = useMemo(() => {
+    if (!svg || usesInlineRendering) return null;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  }, [svg, usesInlineRendering]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [previewBg, setPreviewBg] = useState<PreviewBackground>("grid");
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
@@ -55,12 +72,6 @@ export function SvgPreview({
   const handleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
   }, [isFullscreen]);
-
-  // 将 SVG 转换为 data URI
-  const svgDataUri = useMemo(() => {
-    if (!svg) return null;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  }, [svg]);
 
   const bgClassName = `preview-bg-${previewBg}`;
 
@@ -114,7 +125,7 @@ export function SvgPreview({
 
         <div className="flex items-center gap-0.5">
           {/* 缩放控制 */}
-          {svgDataUri && (
+          {svg && (
             <>
               <button
                 onClick={handleZoomOut}
@@ -232,6 +243,38 @@ export function SvgPreview({
               </svg>
             )}
           </button>
+
+          {/* 导出按钮 */}
+          {svg && onExport && (
+            <>
+              <div className="w-px h-5 bg-border mx-1" />
+              <button
+                onClick={() => onExport("svg")}
+                className="px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                title="导出 SVG"
+              >
+                SVG
+              </button>
+              {exportCapability.png && (
+                <button
+                  onClick={() => onExport("png")}
+                  className="px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                  title="导出 PNG"
+                >
+                  PNG
+                </button>
+              )}
+              {exportCapability.pdf && (
+                <button
+                  onClick={() => onExport("pdf")}
+                  className="px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded transition-colors"
+                  title="导出 PDF"
+                >
+                  PDF
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
 
@@ -246,7 +289,7 @@ export function SvgPreview({
           </div>
         )}
 
-        {svgDataUri ? (
+        {svg ? (
           <TransformWrapper
             ref={transformRef}
             initialScale={1}
@@ -261,13 +304,27 @@ export function SvgPreview({
               wrapperClass="!w-full !h-full"
               contentClass="!w-full !h-full flex items-center justify-center"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={svgDataUri}
-                alt="Diagram"
-                className={`max-w-full max-h-full transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
-                style={{ objectFit: "contain" }}
-              />
+              {usesInlineRendering ? (
+                // Mermaid: inline 渲染，配合 CSS 修复 foreignObject 裁剪
+                <div
+                  className={`max-w-full max-h-full transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  dangerouslySetInnerHTML={{ __html: svg }}
+                />
+              ) : (
+                // 其他引擎: img 标签渲染
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={svgDataUri!}
+                  alt="Diagram"
+                  className={`max-w-full max-h-full transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
+                  style={{ objectFit: "contain" }}
+                />
+              )}
             </TransformComponent>
           </TransformWrapper>
         ) : (

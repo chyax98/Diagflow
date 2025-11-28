@@ -21,6 +21,20 @@ type SyntaxData = Record<string, DiagramType>;
 const SYNTAX_DIR = join(process.cwd(), "src/lib/syntax-md");
 
 /**
+ * 引擎元数据（单一数据源）
+ * 包含引擎特点和适用场景，用于系统提示词
+ */
+export const ENGINE_META: Record<string, { description: string; scenarios: string }> = {
+  mermaid: { description: "语法简单，类型丰富", scenarios: "通用场景，快速出图" },
+  plantuml: { description: "UML 规范，功能全面", scenarios: "专业 UML 图，复杂交互" },
+  d2: { description: "现代语法，样式美观", scenarios: "架构图，技术文档" },
+  dbml: { description: "数据库专用", scenarios: "ER 图，表结构设计" },
+  c4plantuml: { description: "C4 架构模型", scenarios: "系统架构分层视图" },
+  graphviz: { description: "DOT 语法，布局灵活", scenarios: "网络拓扑，依赖关系" },
+  wavedrom: { description: "JSON 格式", scenarios: "数字电路，硬件时序" },
+};
+
+/**
  * 解析简单 YAML（无需外部依赖）
  */
 function parseYaml(content: string): Record<string, unknown> {
@@ -92,13 +106,6 @@ function extractExamples(markdown: string, engine: string): string[] {
     dbml: ["dbml"],
     graphviz: ["dot", "graphviz"],
     c4plantuml: ["plantuml", "c4plantuml"],
-    nomnoml: ["nomnoml"],
-    erd: ["erd"],
-    ditaa: ["ditaa"],
-    svgbob: ["svgbob"],
-    seqdiag: ["seqdiag"],
-    nwdiag: ["nwdiag"],
-    blockdiag: ["blockdiag"],
     wavedrom: ["json", "wavedrom"],
   };
 
@@ -276,19 +283,24 @@ export function listDiagramTypes(engine: string): string[] {
 
 /**
  * 生成引擎选择策略文本（用于 SYSTEM_PROMPT）
- * 简洁的 engine/type 映射表
+ * JSON lines 格式，每行一个 engine/type 组合
  */
 export function generateEngineSelectionText(): string {
   const syntax = loadAllSyntax();
   const lines: string[] = [];
 
-  lines.push("| engine | type | 说明 | 典型场景 |");
-  lines.push("|--------|------|------|----------|");
-
   for (const [engine, types] of Object.entries(syntax)) {
+    const meta = ENGINE_META[engine] || { description: "", scenarios: "" };
+
     for (const [type, info] of Object.entries(types)) {
-      const scenes = info.use_cases.slice(0, 2).join("、");
-      lines.push(`| ${engine} | ${type} | ${info.description} | ${scenes} |`);
+      const item = {
+        engine,
+        type,
+        engine_info: meta.description,
+        description: info.description,
+        use_cases: info.use_cases.slice(0, 3),
+      };
+      lines.push(JSON.stringify(item));
     }
   }
 
