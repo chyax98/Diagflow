@@ -6,28 +6,27 @@
     </linearGradient>
   </defs>
 
-  <!-- 主图形：流程图节点连接 -->
-  <!-- 左节点 -->
-  <circle cx="25" cy="60" r="18" fill="url(#grad)" opacity="0.9"/>
+  <!-- 左上节点（圆角矩形） -->
+  <rect x="15" y="25" width="35" height="35" rx="8" fill="url(#grad)"/>
 
-  <!-- 流线（贝塞尔曲线） -->
-  <path d="M 43 60 Q 60 40, 77 60"
-        stroke="url(#grad)"
-        stroke-width="6"
-        fill="none"
-        stroke-linecap="round"/>
+  <!-- 右下节点（圆角矩形） -->
+  <rect x="70" y="60" width="35" height="35" rx="8" fill="url(#grad)"/>
 
-  <!-- 右节点 -->
-  <circle cx="95" cy="60" r="18" fill="url(#grad)"/>
+  <!-- L形连接线 -->
+  <path
+    d="M 32.5 60 L 32.5 77.5 Q 32.5 82.5 37.5 82.5 L 70 82.5"
+    stroke="url(#grad)"
+    stroke-width="6"
+    fill="none"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 
-  <!-- 箭头 -->
-  <path d="M 88 54 L 95 60 L 88 66"
-        stroke="white"
-        stroke-width="4"
-        fill="none"
-        stroke-linecap="round"
-        stroke-linejoin="round"/>
+  <!-- 左上节点内的小图标（简化的流程符号） -->
+  <rect x="24" y="34" width="8" height="8" rx="2" fill="white" opacity="0.9"/>
+  <rect x="36" y="43" width="8" height="8" rx="2" fill="white" opacity="0.6"/>
 
-  <!-- 左节点内部细节 -->
-  <circle cx="25" cy="60" r="6" fill="white" opacity="0.3"/>
+  <!-- 右下节点内的小图标 -->
+  <rect x="79" y="69" width="8" height="8" rx="2" fill="white" opacity="0.6"/>
+  <rect x="88" y="78" width="8" height="8" rx="2" fill="white" opacity="0.9"/>
 </svg>

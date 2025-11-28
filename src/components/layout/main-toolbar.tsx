@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 
 import {
   Select,
@@ -51,18 +52,14 @@ export function MainToolbar({
       <div className="flex items-center gap-3">
         {/* Logo */}
         <div className="flex items-center gap-2.5 pr-4 border-r border-border mr-1">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-[#5856d6] rounded-lg flex items-center justify-center shadow-md">
-            <svg
-              className="w-[18px] h-[18px] text-white"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 3L2 12h3v9h14v-9h3L12 3z" />
-            </svg>
-          </div>
-          <span className="text-[17px] font-semibold bg-gradient-to-r from-foreground to-gray-5 bg-clip-text text-transparent">
+          <Image
+            src="/favicon.svg"
+            alt="DiagFlow"
+            width={32}
+            height={32}
+            className="rounded-lg shadow-md"
+          />
+          <span className="text-[17px] font-semibold text-foreground">
             DiagFlow
           </span>
         </div>
