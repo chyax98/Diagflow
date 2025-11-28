@@ -25,10 +25,18 @@ docker compose up -d --build
 ## 环境变量
 
 ```env
+# AI 提供商
+AI_PROVIDER=openai
+
+# OpenAI 兼容 API
 OPENAI_API_KEY=sk-your-api-key
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
 OPENAI_MODEL=kimi-k2-thinking
-NEXT_PUBLIC_KROKI_BASE_URL=https://kroki.io
+
+# Kroki 渲染服务
+KROKI_BASE_URL=https://kroki.io
+
+# 端口
 PORT=3000
 ```
 
@@ -69,18 +77,16 @@ certbot --nginx -d diagflow.example.com
 
 ## 自托管 Kroki
 
-```yaml
-services:
-  app:
-    environment:
-      - NEXT_PUBLIC_KROKI_BASE_URL=http://kroki:8000
-    depends_on:
-      - kroki
+使用 `docker-compose.kroki.yml` 部署完整服务栈：
 
-  kroki:
-    image: yuzutech/kroki:latest
-    restart: unless-stopped
+```bash
+docker compose -f docker-compose.kroki.yml up -d
 ```
+
+包含：
+- DiagFlow 应用
+- Kroki 核心网关
+- Mermaid 渲染器
 
 ## 常见问题
 

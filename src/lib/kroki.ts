@@ -3,7 +3,7 @@ import { APP_CONFIG } from "@/config/app";
 const REQUEST_TIMEOUT = APP_CONFIG.timing.REQUEST_TIMEOUT;
 
 // Kroki 服务地址
-const KROKI_BASE_URL = process.env.NEXT_PUBLIC_KROKI_BASE_URL || "https://kroki.io";
+const KROKI_BASE_URL = process.env.KROKI_BASE_URL || "https://kroki.io";
 
 // ============================================================================
 // 自定义错误类型

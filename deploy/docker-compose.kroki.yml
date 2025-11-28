@@ -21,8 +21,8 @@ services:
       # AI 推理配置
       - DIAGFLOW_MAX_STEPS=${DIAGFLOW_MAX_STEPS:-15}
       - DIAGFLOW_MAX_RETRIES=${DIAGFLOW_MAX_RETRIES:-3}
-      # 使用本地 Kroki 服务
-      - NEXT_PUBLIC_KROKI_BASE_URL=http://kroki:8000
+      # 使用本地 Kroki 服务（服务端运行时变量，通过 API 代理访问）
+      - KROKI_BASE_URL=http://kroki:8000
       # Langfuse 监控（可选）
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}

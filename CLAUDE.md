@@ -32,7 +32,7 @@ Next.js (:3000)
 OPENAI_API_KEY=sk-xxx
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
 OPENAI_MODEL=kimi-k2-thinking
-NEXT_PUBLIC_KROKI_BASE_URL=https://kroki.io  # 可选
+KROKI_BASE_URL=https://kroki.io  # 可选
 ```
 
 ## 扩展

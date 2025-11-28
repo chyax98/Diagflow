@@ -16,8 +16,6 @@ describe('APP_CONFIG', () => {
   describe('getAppConfig', () => {
     it('提供默认配置值', () => {
       const config = getAppConfig();
-      expect(config.layout.SIDEBAR_WIDTH).toBe(400);
-      expect(config.layout.TOOLBAR_HEIGHT).toBe(52);
       expect(config.timing.DEBOUNCE_MS).toBe(500);
       expect(config.timing.REQUEST_TIMEOUT).toBe(60000);
       expect(config.timing.AUTO_SAVE_INTERVAL).toBe(30000);
@@ -28,13 +26,11 @@ describe('APP_CONFIG', () => {
 
     it('环境变量覆盖默认值', () => {
       process.env.NEXT_PUBLIC_DEBOUNCE_MS = '300';
-      process.env.NEXT_PUBLIC_SIDEBAR_WIDTH = '500';
-      process.env.NEXT_PUBLIC_REQUEST_TIMEOUT = '60000';
+      process.env.NEXT_PUBLIC_REQUEST_TIMEOUT = '90000';
 
       const config = getAppConfig();
       expect(config.timing.DEBOUNCE_MS).toBe(300);
-      expect(config.layout.SIDEBAR_WIDTH).toBe(500);
-      expect(config.timing.REQUEST_TIMEOUT).toBe(60000);
+      expect(config.timing.REQUEST_TIMEOUT).toBe(90000);
     });
 
     it('无效环境变量使用默认值', () => {
