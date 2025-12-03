@@ -1,45 +1,39 @@
 # 部署指南
 
-## 快速部署
+## Docker（推荐）
 
 ```bash
-# 1. 下载配置
-wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/docker-compose.kroki.yml
+# 下载配置
+wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/docker-compose.yml
 wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/.env.example -O .env
 
-# 2. 配置 API Key
+# 配置 API Key
 vim .env
 
-# 3. 启动
-docker compose -f docker-compose.kroki.yml up -d
+# 启动
+docker compose up -d
 ```
 
 访问 http://localhost:3000
 
+### 可选配置
+
+编辑 `docker-compose.yml`：
+- **本地 Kroki**：取消 `kroki`/`mermaid` 注释，设置 `KROKI_BASE_URL=http://kroki:8000`
+- **代理**：取消 `HTTP_PROXY` 注释
+
+## Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chyax98/Diagflow&env=OPENAI_API_KEY,OPENAI_BASE_URL,OPENAI_MODEL)
+
+> Hobby 计划限制 10s 超时，推荐使用快速模型
+
 ## 环境变量
 
 ```env
-OPENAI_API_KEY=sk-xxx          # 必填
-OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=kimi-k2-thinking
+OPENAI_API_KEY=sk-xxx                      # 必填
+OPENAI_BASE_URL=https://api.moonshot.cn/v1 # 可选
+OPENAI_MODEL=kimi-k2-thinking              # 可选
 ```
 
-## 常用命令
-
-```bash
-docker compose -f docker-compose.kroki.yml up -d     # 启动
-docker compose -f docker-compose.kroki.yml logs -f   # 日志
-docker compose -f docker-compose.kroki.yml down      # 停止
-```
-
-## 部署方式
-
-| 方式 | 配置文件 | 说明 |
-|------|----------|------|
-| 自托管 Kroki | `docker-compose.kroki.yml` | 推荐，含 Mermaid 渲染器 |
-| 公网 Kroki | `docker-compose.prod.yml` | 使用 kroki.io |
-| Vercel | [vercel.md](./vercel.md) | 一键部署 |
-
-## 网络代理
-
-如需代理访问 LLM API，使用 `network_mode: host`（已在 kroki.yml 配置）。
+支持 Kimi、OpenRouter、OpenAI 等兼容 API。
