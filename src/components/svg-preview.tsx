@@ -296,23 +296,19 @@ export function SvgPreview({
             minScale={0.1}
             maxScale={4}
             centerOnInit={true}
+            limitToBounds={false}
             wheel={{ step: 0.1 }}
             doubleClick={{ disabled: false, mode: "reset" }}
-            panning={{ disabled: false }}
+            panning={{ disabled: false, velocityDisabled: true }}
           >
             <TransformComponent
               wrapperClass="!w-full !h-full"
-              contentClass="!w-full !h-full flex items-center justify-center"
+              contentClass="flex items-center justify-center"
             >
               {usesInlineRendering ? (
                 // Mermaid: inline 渲染，配合 CSS 修复 foreignObject 裁剪
                 <div
-                  className={`max-w-full max-h-full transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className={`transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
                   dangerouslySetInnerHTML={{ __html: svg }}
                 />
               ) : (
@@ -321,8 +317,7 @@ export function SvgPreview({
                 <img
                   src={svgDataUri!}
                   alt="Diagram"
-                  className={`max-w-full max-h-full transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
-                  style={{ objectFit: "contain" }}
+                  className={`transition-opacity ${error ? "opacity-50 grayscale" : ""}`}
                 />
               )}
             </TransformComponent>
