@@ -32,9 +32,9 @@ services:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.moonshot.cn/v1}
       - OPENAI_MODEL=${OPENAI_MODEL:-kimi-k2-thinking}
       # Anthropic Claude API
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-https://api.anthropic.com}
-      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      - ANTHROPIC_API_KEY=${DIAGFLOW_ANTHROPIC_API_KEY:-}
+      - ANTHROPIC_BASE_URL=${DIAGFLOW_ANTHROPIC_BASE_URL:-https://api.anthropic.com}
+      - ANTHROPIC_MODEL=${DIAGFLOW_ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
       # AI 推理配置
       - DIAGFLOW_MAX_STEPS=${DIAGFLOW_MAX_STEPS:-15}
       - DIAGFLOW_MAX_RETRIES=${DIAGFLOW_MAX_RETRIES:-3}
