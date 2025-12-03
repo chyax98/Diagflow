@@ -2,60 +2,39 @@
 
 ## 快速开始
 
-### 使用预构建镜像
-
 ```bash
-wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/docker-compose.prod.yml
-wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/.env.example
-cp .env.example .env && vim .env
-docker compose -f docker-compose.prod.yml up -d
+cd deploy
+cp .env.example .env  # 配置 API Key
+docker compose up -d
 ```
 
-### 本地构建
+## 可选配置
 
-```bash
-git clone https://github.com/chyax98/Diagflow.git
-cd Diagflow
-cp .env.example .env && vim .env
-docker compose up -d --build
+### 启用本地 Kroki（渲染更快）
+
+1. 编辑 `docker-compose.yml`，取消 `kroki` 和 `mermaid` 服务的注释
+2. 取消 `app.depends_on` 的注释
+3. 设置 `KROKI_BASE_URL=http://kroki:8000`
+
+### 本地构建镜像
+
+将 `app.image` 替换为：
+```yaml
+build:
+  context: ..
+  dockerfile: Dockerfile
 ```
 
-访问 http://localhost:3000
+### 配置代理
 
-## 环境变量
-
-```env
-# AI 提供商
-AI_PROVIDER=openai
-
-# OpenAI 兼容 API
-OPENAI_API_KEY=sk-your-api-key
-OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=kimi-k2-thinking
-
-# Kroki 渲染服务
-KROKI_BASE_URL=https://kroki.io
-
-# 端口
-PORT=3000
-```
-
-## 常用命令
-
-```bash
-docker compose up -d        # 启动
-docker compose stop         # 停止
-docker compose logs -f      # 日志
-docker compose pull && docker compose up -d  # 更新
-```
+取消 `HTTP_PROXY` / `HTTPS_PROXY` 注释并修改地址。
 
 ## Nginx 反向代理
 
 ```nginx
 server {
     listen 80;
-    server_name diagflow.example.com;
-    client_max_body_size 10M;
+    server_name diagram.example.com;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -63,35 +42,14 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
     }
 }
 ```
-
-### HTTPS
-
-```bash
-apt install certbot python3-certbot-nginx
-certbot --nginx -d diagflow.example.com
-```
-
-## 自托管 Kroki
-
-使用 `docker-compose.kroki.yml` 部署完整服务栈：
-
-```bash
-docker compose -f docker-compose.kroki.yml up -d
-```
-
-包含：
-- DiagFlow 应用
-- Kroki 核心网关
-- Mermaid 渲染器
 
 ## 常见问题
 
 | 问题 | 解决 |
 |------|------|
-| 端口占用 | `lsof -i :3000` 或修改 `PORT` |
-| 内存不足 | 增加 Docker 内存限制 |
-| 构建失败 | 确保 Node 20+，检查 pnpm-lock.yaml |
+| LLM API 超时 | 配置代理或使用 `network_mode: host` |
+| 端口冲突 | 修改 `.env` 中的 `PORT` |
+| Mermaid 渲染失败 | 启用本地 Kroki 服务 |

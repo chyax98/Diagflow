@@ -1,57 +1,45 @@
-# 部署配置
-
-## 文件说明
-
-| 文件 | 说明 |
-|------|------|
-| `docker-compose.prod.yml` | 生产环境（预构建镜像，使用公网 Kroki） |
-| `docker-compose.kroki.yml` | 生产环境 + 自托管 Kroki（含 Mermaid） |
-| `docker-compose.yml` | 本地构建 |
-| `nginx.conf` | Nginx 反向代理 |
-| `vercel.md` | Vercel 部署 |
-| `docker.md` | Docker 部署 |
+# 部署指南
 
 ## 快速部署
 
-### 方式一：使用公网 Kroki（推荐）
-
 ```bash
-cp .env.example .env
-vim .env  # 配置 API Key
-docker compose -f docker-compose.prod.yml up -d
-```
+# 1. 下载配置
+wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/docker-compose.kroki.yml
+wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/.env.example -O .env
 
-### 方式二：自托管 Kroki
+# 2. 配置 API Key
+vim .env
 
-适合内网环境或需要更快渲染速度的场景：
-
-```bash
-cp .env.example .env
-vim .env  # 配置 API Key
+# 3. 启动
 docker compose -f docker-compose.kroki.yml up -d
 ```
 
-包含服务：
-- DiagFlow 应用
-- Kroki 核心网关
-- Mermaid 渲染器
-
-详见 [vercel.md](./vercel.md) 和 [docker.md](./docker.md)
+访问 http://localhost:3000
 
 ## 环境变量
 
 ```env
-# AI 提供商（openai 或 anthropic）
-AI_PROVIDER=openai
-
-# OpenAI 兼容 API
-OPENAI_API_KEY=sk-your-api-key
+OPENAI_API_KEY=sk-xxx          # 必填
 OPENAI_BASE_URL=https://api.moonshot.cn/v1
 OPENAI_MODEL=kimi-k2-thinking
-
-# 或 Anthropic Claude
-# ANTHROPIC_API_KEY=sk-ant-xxx
-# ANTHROPIC_MODEL=claude-sonnet-4-20250514
 ```
 
-完整配置见 `.env.example`
+## 常用命令
+
+```bash
+docker compose -f docker-compose.kroki.yml up -d     # 启动
+docker compose -f docker-compose.kroki.yml logs -f   # 日志
+docker compose -f docker-compose.kroki.yml down      # 停止
+```
+
+## 部署方式
+
+| 方式 | 配置文件 | 说明 |
+|------|----------|------|
+| 自托管 Kroki | `docker-compose.kroki.yml` | 推荐，含 Mermaid 渲染器 |
+| 公网 Kroki | `docker-compose.prod.yml` | 使用 kroki.io |
+| Vercel | [vercel.md](./vercel.md) | 一键部署 |
+
+## 网络代理
+
+如需代理访问 LLM API，使用 `network_mode: host`（已在 kroki.yml 配置）。

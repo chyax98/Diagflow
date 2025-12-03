@@ -1,16 +1,31 @@
+# ==========================================================
+# DiagFlow Docker Compose
+# ==========================================================
+# 使用方式：
+#   1. 复制 .env.example 为 .env 并配置 API Key
+#   2. docker compose up -d
+#
+# 可选配置：
+#   - 本地 Kroki：取消下方 kroki/mermaid 服务的注释
+#   - 本地构建：将 app.image 替换为 app.build
+# ==========================================================
+
 services:
-  # ============================================
-  # DiagFlow 应用（本地构建）
-  # ============================================
   app:
-    build:
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/chyax98/diagflow:latest
+    # 本地构建时使用：
+    # build:
+    #   context: ..
+    #   dockerfile: Dockerfile
     ports:
       - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
-      # AI 提供商选择
+      # 代理配置（按需启用）
+      # - HTTP_PROXY=http://172.17.0.1:7890
+      # - HTTPS_PROXY=http://172.17.0.1:7890
+      # - NO_PROXY=localhost,127.0.0.1
+      # AI 提供商
       - AI_PROVIDER=${AI_PROVIDER:-openai}
       # OpenAI 兼容 API
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -23,12 +38,17 @@ services:
       # AI 推理配置
       - DIAGFLOW_MAX_STEPS=${DIAGFLOW_MAX_STEPS:-15}
       - DIAGFLOW_MAX_RETRIES=${DIAGFLOW_MAX_RETRIES:-3}
-      # Kroki 渲染服务（服务端运行时变量）
+      # Kroki 渲染服务
+      # 公网：https://kroki.io | 本地：http://kroki:8000
       - KROKI_BASE_URL=${KROKI_BASE_URL:-https://kroki.io}
       # Langfuse 监控（可选）
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY:-}
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY:-}
       - LANGFUSE_HOST=${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    # 使用本地 Kroki 时启用：
+    # depends_on:
+    #   kroki:
+    #     condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
@@ -36,3 +56,29 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ==========================================================
+  # 本地 Kroki 服务（可选，取消注释启用）
+  # ==========================================================
+  # kroki:
+  #   image: yuzutech/kroki
+  #   ports:
+  #     - "${KROKI_PORT:-8100}:8000"
+  #   environment:
+  #     - KROKI_MERMAID_HOST=mermaid
+  #     - KROKI_SAFE_MODE=unsafe
+  #   depends_on:
+  #     - mermaid
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+
+  # mermaid:
+  #   image: yuzutech/kroki-mermaid
+  #   expose:
+  #     - "8002"
+  #   restart: unless-stopped
