@@ -13,25 +13,34 @@
 - 📤 导出 SVG/PNG/PDF
 - 📊 支持 Mermaid、PlantUML、D2、Graphviz 等
 
-## 快速开始
+## 部署
 
-**本地开发**
+### Docker
+
 ```bash
-pnpm install && cp .env.example .env.local
-# 编辑 .env.local 配置 OPENAI_API_KEY
-pnpm dev
+wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/docker-compose.yml
+wget https://raw.githubusercontent.com/chyax98/Diagflow/main/deploy/.env.example -O .env
+vim .env  # 配置 OPENAI_API_KEY
+docker compose up -d
 ```
 
-**Docker 部署** → [deploy/](./deploy/)
+### Vercel
 
-**Vercel** → [![Deploy](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chyax98/Diagflow&env=OPENAI_API_KEY,OPENAI_BASE_URL,OPENAI_MODEL)
+[![Deploy](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/chyax98/Diagflow&env=OPENAI_API_KEY,OPENAI_BASE_URL,OPENAI_MODEL)
+
+### 本地开发
+
+```bash
+pnpm install && cp .env.example .env.local
+pnpm dev
+```
 
 ## 环境变量
 
 ```env
-OPENAI_API_KEY=sk-xxx
-OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=kimi-k2-thinking
+OPENAI_API_KEY=sk-xxx                       # 必填
+OPENAI_BASE_URL=https://api.moonshot.cn/v1  # 可选
+OPENAI_MODEL=kimi-k2-thinking               # 可选
 ```
 
 支持 Kimi、OpenRouter、OpenAI 等兼容 API。
