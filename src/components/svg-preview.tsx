@@ -40,9 +40,11 @@ export function SvgPreview({
   onExport,
   exportCapability = { png: true, pdf: true, jpeg: true },
 }: SvgPreviewProps) {
-  // Mermaid 使用 inline 渲染（解决 foreignObject 裁剪问题）
+  // Mermaid 和 D2 使用 inline 渲染
+  // - Mermaid: 解决 foreignObject 裁剪问题
+  // - D2: 外层 SVG 没有 width/height 属性，img 标签无法正确确定尺寸
   // 其他引擎使用 img 标签（更稳定）
-  const usesInlineRendering = diagramType === "mermaid";
+  const usesInlineRendering = diagramType === "mermaid" || diagramType === "d2";
 
   // 将 SVG 转换为 data URI（非 Mermaid 引擎使用）
   const svgDataUri = useMemo(() => {
